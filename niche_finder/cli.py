@@ -111,7 +111,10 @@ def viral(cfg: Config, conn, channels: list[str], limit: int, top: int, check: b
 
     yt = YouTubeSource(HttpClient(cfg.proxies, min_interval=0.2), cfg.youtube_api_key)
     if not yt.enabled:
-        raise SystemExit("viral: потрібен YOUTUBE_API_KEY у .env")
+        from .sources.ytdlp import YtDlpSource
+
+        log.info("viral: немає YOUTUBE_API_KEY — беру дані через yt-dlp (без перевірки на інших каналах)")
+        yt = YtDlpSource()
     if not channels:
         raise SystemExit("viral: вкажіть канал, напр. python -m niche_finder viral @UselessMoney")
     for ref in channels:
@@ -121,10 +124,22 @@ def viral(cfg: Config, conn, channels: list[str], limit: int, top: int, check: b
         log.info("%s: %d formulas -> %s", channel["title"], len(result["patterns"]), path)
 
 
+def formats(cfg: Config, conn, channels: list[str], limit: int, lang: str) -> None:
+    from .formats import analyze_formats, write_formats_report
+    from .sources.ytdlp import YtDlpSource
+
+    if not channels:
+        raise SystemExit("formats: вкажіть канал, напр. python -m niche_finder formats @MarcusExplainsHQ")
+    for ref in channels:
+        channel, found = analyze_formats(YtDlpSource(), conn, ref, cfg.anthropic_model, limit=limit, lang=lang)
+        path = write_formats_report(channel, found, cfg.reports_dir)
+        log.info("%s: %d formats -> %s", channel["title"], len(found), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral"])
-    parser.add_argument("channels", nargs="*", help="для viral: @handle, URL або id каналів")
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats"])
+    parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
     parser.add_argument("--check-top", type=int, default=25, help="скільки ключових слів перевірити в Google Trends")
@@ -150,5 +165,7 @@ def main(argv: list[str] | None = None) -> None:
         trends(cfg, conn, args.check_top)
     if args.command in ("report", "run"):
         report(cfg, conn, args.days, args.min_mentions)
+    if args.command == "formats":
+        formats(cfg, conn, args.channels, args.videos, args.lang)
     if args.command == "viral":
         viral(cfg, conn, args.channels, args.videos, args.top, not args.no_check, args.lang)

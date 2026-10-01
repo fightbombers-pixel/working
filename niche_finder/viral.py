@@ -107,7 +107,7 @@ def outlier_scores(videos: list[dict], neighbors: int = NEIGHBORS, min_age: floa
     scored = []
     for is_short in (0, 1):
         group = sorted((v for v in videos if v["is_short"] == is_short and v["age_days"] >= min_age),
-                       key=lambda v: v["published_at"])
+                       key=lambda v: v.get("order", v["published_at"]))
         for i, v in enumerate(group):
             lo = max(0, min(i - neighbors // 2, len(group) - neighbors - 1))
             peers = [p["views"] for p in group[lo:lo + neighbors + 1] if p is not v]
@@ -205,11 +205,19 @@ def save_patterns(conn: sqlite3.Connection, channel: dict, result: dict) -> None
     conn.commit()
 
 
-def analyze_channel(yt: YouTubeSource, conn: sqlite3.Connection, ref: str, model: str,
+def load_channel(src, ref: str, limit: int) -> tuple[dict, list[dict]]:
+    """YouTube API або yt-dlp -> (канал, відео)."""
+    if isinstance(src, YouTubeSource):
+        channel = src.channel(ref)
+        return channel, src.channel_videos(channel["uploads"], limit=limit)
+    return src.channel(ref, limit=limit)
+
+
+def analyze_channel(yt, conn: sqlite3.Connection, ref: str, model: str,
                     client: anthropic.Anthropic | None = None, limit: int = 200, top: int = 25,
                     check: bool = True, lang: str = "Ukrainian") -> tuple[dict, dict, list[dict]]:
-    channel = yt.channel(ref)
-    videos = outlier_scores(yt.channel_videos(channel["uploads"], limit=limit))
+    channel, videos = load_channel(yt, ref, limit)
+    videos = outlier_scores(videos)
     save_videos(conn, videos)
     log.info("%s: %d videos analysed", channel["title"], len(videos))
     if len(videos) < 5:
@@ -220,7 +228,7 @@ def analyze_channel(yt: YouTubeSource, conn: sqlite3.Connection, ref: str, model
     result = extract_patterns(client or anthropic.Anthropic(), model, channel, outliers, flops, lang=lang)
 
     for p in result["patterns"]:
-        if check:
+        if check and isinstance(yt, YouTubeSource):  # пошуку yt-dlp бракує підписників — див. formats
             try:
                 p["validation"] = validate(yt, p, channel["id"])
             except Exception as exc:  # квота/мережа — формула лишається без перевірки
