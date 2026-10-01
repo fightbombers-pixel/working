@@ -124,14 +124,15 @@ def viral(cfg: Config, conn, channels: list[str], limit: int, top: int, check: b
         log.info("%s: %d formulas -> %s", channel["title"], len(result["patterns"]), path)
 
 
-def formats(cfg: Config, conn, channels: list[str], limit: int, lang: str) -> None:
+def formats(cfg: Config, conn, channels: list[str], limit: int, lang: str, exclude: set[str]) -> None:
     from .formats import analyze_formats, write_formats_report
     from .sources.ytdlp import YtDlpSource
 
     if not channels:
         raise SystemExit("formats: вкажіть канал, напр. python -m niche_finder formats @MarcusExplainsHQ")
     for ref in channels:
-        channel, found = analyze_formats(YtDlpSource(), conn, ref, cfg.anthropic_model, limit=limit, lang=lang)
+        channel, found = analyze_formats(YtDlpSource(), conn, ref, cfg.anthropic_model, limit=limit, lang=lang,
+                                         exclude=exclude)
         path = write_formats_report(channel, found, cfg.reports_dir)
         log.info("%s: %d formats -> %s", channel["title"], len(found), path)
 
@@ -157,6 +158,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--top", type=int, default=25, help="viral: скільки outlier-відео давати Claude")
     parser.add_argument("--no-check", action="store_true", help="viral: не перевіряти формули на інших каналах")
     parser.add_argument("--lang", default="Ukrainian", help="viral: мова пояснень у звіті")
+    parser.add_argument("--exclude", default="", help="formats: власні канали через кому (назви або id), "
+                        "щоб їхні відео не рахувались як попит, напр. 'Lume,TrueCrimeVault,ago,Lumicus'")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -176,6 +179,7 @@ def main(argv: list[str] | None = None) -> None:
     if args.command == "discover":
         discover_cmd(cfg)
     if args.command == "formats":
-        formats(cfg, conn, args.channels, args.videos, args.lang)
+        formats(cfg, conn, args.channels, args.videos, args.lang,
+                {e for e in args.exclude.split(",") if e.strip()})
     if args.command == "viral":
         viral(cfg, conn, args.channels, args.videos, args.top, not args.no_check, args.lang)

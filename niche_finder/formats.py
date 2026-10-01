@@ -121,9 +121,15 @@ def matches(title: str, phrase: str) -> bool:
     return all(w.strip() in title for w in phrase.lower().split("|") if w.strip())
 
 
-def market_check(search, query: str, phrase: str, limit: int = 30, exclude_channel: str = "") -> dict:
-    """Попит і пропозиція формату в ніші за видачею YouTube."""
-    found = [v for v in search(query, limit) if matches(v["title"], phrase) and v["channel_id"] != exclude_channel]
+def market_check(search, query: str, phrase: str, limit: int = 30, exclude_channel: str = "",
+                 exclude: set[str] = frozenset()) -> dict:
+    """Попит і пропозиція формату в ніші за видачею YouTube.
+
+    exclude — id або назви власних каналів (мережі), щоб свої відео не роздували медіану.
+    """
+    skip = {exclude_channel.lower(), *(e.strip().lower() for e in exclude)} - {""}
+    found = [v for v in search(query, limit) if matches(v["title"], phrase)
+             and v["channel_id"].lower() not in skip and v["channel_title"].strip().lower() not in skip]
     views = sorted((v["views"] for v in found), reverse=True)
     channels = {v["channel_id"] or v["channel_title"] for v in found}
     stats = {
@@ -158,7 +164,7 @@ def opportunity(s: dict) -> float:
 
 
 def analyze_formats(src, conn: sqlite3.Connection, ref: str, model: str, client: anthropic.Anthropic | None = None,
-                    limit: int = 200, lang: str = "Ukrainian") -> tuple[dict, list[dict]]:
+                    limit: int = 200, lang: str = "Ukrainian", exclude: set[str] = frozenset()) -> tuple[dict, list[dict]]:
     channel, videos = src.channel(ref, limit=limit)
     videos = outlier_scores(videos)
     if len(videos) < 5:
@@ -169,13 +175,13 @@ def analyze_formats(src, conn: sqlite3.Connection, ref: str, model: str, client:
     for f in formats:
         f["evidence"] = [by_id[i] for i in f["evidence_ids"] if i in by_id and by_id[i]["outlier"] >= OUTLIER_MIN]
         try:
-            f["base"] = market_check(src.search, f["base_query"], f["base_match"], exclude_channel=channel["id"])
+            f["base"] = market_check(src.search, f["base_query"], f["base_match"], exclude_channel=channel["id"], exclude=exclude)
         except Exception as exc:
             log.error("base %s: %s", f["base_query"], exc)
             f["base"] = None
         for t in f["transpositions"]:
             try:
-                t["market"] = market_check(src.search, t["query"], t["match_phrase"], exclude_channel=channel["id"])
+                t["market"] = market_check(src.search, t["query"], t["match_phrase"], exclude_channel=channel["id"], exclude=exclude)
             except Exception as exc:  # одна невдала перевірка не валить решту
                 log.error("check %s: %s", t["query"], exc)
                 t["market"] = {"verdict": "untested", "score": 0.0, "videos": 0, "channels": 0,

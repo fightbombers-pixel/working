@@ -70,6 +70,7 @@ python -m niche_finder discover
 
 ```bash
 python -m niche_finder formats @MarcusExplainsHQ @techdisctrict @UselessMoney
+python -m niche_finder formats @Lumicus-yt --exclude "Lume,TrueCrimeVault,ago,Lumicus"   # без своїх каналів у попиті
 ```
 
 1. Відео каналу → outlier score (перегляди / медіана сусідніх відео).

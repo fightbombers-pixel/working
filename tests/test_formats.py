@@ -98,3 +98,8 @@ def test_discover_breakouts(monkeypatch, tmp_path):
     [r] = d.discover([("Every X Explained", "every explained", "every|explained in")], workers=1)
     assert r["videos"] == 2 and r["breakout_channels"] == 1 and r["breakouts"][0]["channel"] == "UCsmall"
     assert "Every Shark" in d.write_discover_report([r], tmp_path).read_text()
+
+
+def test_market_check_excludes_network_by_name():
+    s = market_check(FakeSource().search, "q", "make|money", exclude={"UCc0", " ucc1 "})
+    assert s["videos"] == 19  # UCsrc лишається (не виключений), UCc0 і UCc1 виключені
