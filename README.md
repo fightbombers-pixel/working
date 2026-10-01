@@ -51,6 +51,17 @@ python -m niche_finder report       # звіт з того, що вже в ба�
 Запускайте раз на тиждень (cron): `0 9 * * 1 cd /path/to/repo && python -m niche_finder run`.
 Дані накопичуються в `data/niches.db` (SQLite), тож з кожним тижнем видно динаміку.
 
+## Пошук нових форматів (`discover`)
+
+```bash
+python -m niche_finder discover
+```
+
+Проганяє ~30 шаблонів назв («Every X Explained in N Minutes», «Your Life as Every Rank», «Psychology of People Who»…)
+по відео цього року і шукає **breakout**: канал <100k підписників, відео набрало ≥3× підписників.
+Багато різних малих каналів вистрілюють на одному шаблоні → перегляди дає формат, а не автор → його можна клонувати.
+Шаблони — `SEED_FORMATS` у `discover.py`, доповнюйте. Канали з breakout подавайте далі в `formats @канал`.
+
 ## Множення форматів (`formats`) — головне
 
 Шукає не теми, а **формати**: шаблони, які копіюють і множать на інші ніші, персони і мови

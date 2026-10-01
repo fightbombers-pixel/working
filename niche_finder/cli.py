@@ -136,9 +136,17 @@ def formats(cfg: Config, conn, channels: list[str], limit: int, lang: str) -> No
         log.info("%s: %d formats -> %s", channel["title"], len(found), path)
 
 
+def discover_cmd(cfg: Config) -> None:
+    from .discover import discover, write_discover_report
+
+    results = discover()
+    path = write_discover_report(results, cfg.reports_dir)
+    log.info("%d formats -> %s", len(results), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats"])
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover"])
     parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
@@ -165,6 +173,8 @@ def main(argv: list[str] | None = None) -> None:
         trends(cfg, conn, args.check_top)
     if args.command in ("report", "run"):
         report(cfg, conn, args.days, args.min_mentions)
+    if args.command == "discover":
+        discover_cmd(cfg)
     if args.command == "formats":
         formats(cfg, conn, args.channels, args.videos, args.lang)
     if args.command == "viral":

@@ -83,3 +83,18 @@ def test_analyze_formats(tmp_path):
 def test_market_check_excludes_own_channel():
     s = market_check(FakeSource().search, "q", "make|money", exclude_channel="UCsrc")
     assert s["top_views"] == 40
+
+
+def test_discover_breakouts(monkeypatch, tmp_path):
+    from niche_finder import discover as d
+
+    def fake_search(query, limit=40):
+        return [parse_entry(entry("a", 300_000, "Every Shark Explained in 9 Minutes", "UCsmall")),
+                parse_entry(entry("b", 900_000, "Every Planet Explained in 9 Minutes", "UCbig")),
+                parse_entry(entry("c", 5_000, "random video", "UCx"))]
+
+    monkeypatch.setattr(d, "search_recent", fake_search)
+    monkeypatch.setattr(d, "subscribers", lambda cid: {"UCsmall": 2_000, "UCbig": 5_000_000}[cid])
+    [r] = d.discover([("Every X Explained", "every explained", "every|explained in")], workers=1)
+    assert r["videos"] == 2 and r["breakout_channels"] == 1 and r["breakouts"][0]["channel"] == "UCsmall"
+    assert "Every Shark" in d.write_discover_report([r], tmp_path).read_text()
