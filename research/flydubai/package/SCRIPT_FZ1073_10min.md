@@ -232,9 +232,13 @@
 
 ## 7. ХТО І ЧОМУ · 7:25–8:30 · 160 слів
 
-> So who was the attacker — and why?
+> So who was the attacker?
 >
-> Officially, we don't know.
+> Within hours, the internet had an answer — and it was wrong. On the day of the flight, a post on X claimed the captain was Russian and his co-pilot Ukrainian: a war between two countries, playing out in a cockpit. Some early Israeli reports repeated it.
+>
+> It fell apart within a day. India's embassy confirmed the stabbed captain was Indian. An Omani official told CBS News the suspect was born in Oman and holds Omani citizenship. Snopes rated the Russia-Ukraine claim false.
+>
+> And why did he do it? Officially, we don't know.
 >
 > Flydubai says the motive is "unknown and remains subject to formal investigation." The UAE's Attorney General has opened an inquiry into whether there was "any terrorist activity or purpose." Israel's defence minister has already called it "an attempted jihadist terror attack." But Netanyahu himself, in a separate interview, said it "looks like a suicide attempt."
 >
@@ -252,6 +256,8 @@
 
 | ~с | Кадр |
 |---|---|
+| 6 | [ГРАФІКА] Стилізований пост у X арабською → переклад «The pilot was Russian, and his co-pilot was Ukrainian»; ранні заголовки «fight between pilots» |
+| 5 | [ГРАФІКА] Штамп «FALSE — Snopes»; картки «Captain: India (Indian embassy)» / «Suspect: Oman (Omani official, CBS)» |
 | 8 | [ГРАФІКА] Картки «OPEN QUESTIONS»: motive? / how did a knife get on board? / who entered first? / why the dive? |
 | 6 | [ГРАФІКА] Цитати поруч: flydubai · UAE Attorney General · Katz · Netanyahu — плашка «UNCONFIRMED» |
 | 5 | [АРХІВ] Fox youtu.be/85cehlWLNa8 — Нетаньягу (знайти таймкод цитати; звук під VO) |
@@ -329,6 +335,8 @@
 - Механіка дверей 737 у блоці 3 — узагальнено; конкретні перемикачі для 3D звірити з пілотом-консультантом або FCOM.
 - Germanwings: 150 загиблих = 144 пасажири + 6 екіпажу; «149 other people» — тобто всі, крім самого пілота. Звірити формулювання.
 - Статистика EASA (правило двох — рекомендація 2015, скасована 2016) — з Wikipedia; бажано друге джерело.
+- Фейк «росіянин vs українець»: Snopes (передрук Yahoo, 30.09: пост X-акаунта @WWIIIAR арабською, рейтинг FALSE), Il Foglio («Initial reports suggested… Russian… Ukrainian»; Ynet — оманець), The Media Line («Reports circulating in Israel… not confirmed by Reuters, AP, Flydubai»). Ім'я акаунта в кадрі не показувати.
+- НЕ вставляти у VO: версію, що резервні пілоти, які посадили літак, були українцем і росіянином — її дають переважно українські видання з посиланням на Israel Hayom; інші джерела кажуть ПАР/Нова Зеландія (Migflug) або британець (ITV). Не підтверджено.
 - Сценарій написаний на 01.10.2026. Якщо до публікації вийде ім'я, обвинувачення або попередній звіт — оновити блоки 1, 7, 9.
 
 ## Файли поруч
