@@ -183,6 +183,14 @@ On the day of the flight, a post on X claimed the captain was Russian and his co
 It fell apart within a day. India's embassy confirmed the stabbed captain was Indian. An Omani official told CBS News the suspect was born in Oman and holds Omani citizenship. Snopes rated the Russia-Ukraine claim false.
 
 **[HOST]**
+But here's the twist. There may have been a Ukrainian and a Russian on that plane after all.
+
+**[VO]** *[3D: двоє резервних пілотів у кріслах, руки на штурвалі й РУДах; ГРАФІКА: прапори UA і RU поруч, підпис «Israel Hayom — unconfirmed»]*
+According to Israel Hayom, two of the off-duty pilots who helped land Flight 1073 were a Ukrainian and a Russian. Not fighting each other in the cockpit — flying the plane together, after the real attacker had been tied up in the aisle.
+That hasn't been officially confirmed, and other outlets give different nationalities for those pilots.
+
+**[HOST]**
+But if it's true — the internet invented a Russia-Ukraine fight that never happened… and missed a Russian and a Ukrainian saving a hundred and eighty people, side by side.
 And that's exactly why I keep saying "according to." In the first hours of a story like this, the loudest version is usually not the true one.
 So — why did he do it?
 Officially? We don't know. And I'm not going to pretend we do.
