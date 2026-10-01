@@ -29,6 +29,9 @@ def growth_ratio(values: list[float]) -> float | None:
     if len(values) < 104:
         return None
     last, prev = values[-52:], values[-104:-52]
+    # Запит з малим обсягом: Google віддає переважно нулі, і будь-який сплеск дає «ріст ×5» — це шум
+    if sum(1 for v in last + prev if v == 0) > 0.3 * 104:
+        return None
     prev_mean = sum(prev) / len(prev)
     last_mean = sum(last) / len(last)
     if prev_mean == 0:
@@ -53,20 +56,26 @@ class TrendsChecker:
     def __init__(self, proxies: list[str] | None = None, pause: float = 8.0):
         from pytrends.request import TrendReq
 
-        self.client = TrendReq(hl="en-US", tz=0, timeout=(10, 30), retries=3, backoff_factor=2,
-                               proxies=list(proxies or []))
+        # retries=0: вбудовані повтори pytrends несумісні з urllib3 2.x (method_whitelist), повторюємо самі
+        self.client = TrendReq(hl="en-US", tz=0, timeout=(10, 30), retries=0, proxies=list(proxies or []))
         self.pause = pause
 
-    def check(self, keyword: str, geo: str = "") -> tuple[float | None, float | None]:
+    def check(self, keyword: str, geo: str = "", attempts: int = 4) -> tuple[float | None, float | None]:
         """Повертає (growth_ratio, seasonality) для ключового слова. geo="" — весь світ."""
-        try:
-            self.client.build_payload([keyword], timeframe="today 5-y", geo=geo)
-            df = self.client.interest_over_time()
-        except Exception as exc:
-            log.warning("trends check failed for %r (%s): %s", keyword, geo or "world", exc)
+        df = None
+        for attempt in range(attempts):
+            try:
+                self.client.build_payload([keyword], timeframe="today 5-y", geo=geo)
+                df = self.client.interest_over_time()
+                break
+            except Exception as exc:
+                log.warning("trends check failed for %r (%s), attempt %d: %s",
+                            keyword, geo or "world", attempt + 1, exc)
+                time.sleep(self.pause * (2 ** attempt))
+            finally:
+                time.sleep(self.pause)
+        if df is None:
             return None, None
-        finally:
-            time.sleep(self.pause)
         if df.empty or keyword not in df:
             return None, None
         values = [float(v) for v in df[keyword].tolist()]

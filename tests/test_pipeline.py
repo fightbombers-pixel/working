@@ -123,3 +123,30 @@ def test_http_retries_and_rotates(monkeypatch):
     assert http.get("https://example.com").status_code == 200
     assert len(seen) == 3
     assert seen[1] != seen[0]  # проксі, що отримав 429, тимчасово виключається
+
+
+def test_low_volume_growth_is_ignored():
+    sparse = [0.0] * 90 + [100.0, 0, 0, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    assert google_trends.growth_ratio(sparse) is None
+
+
+def test_apify_social_inputs_and_parsing():
+    from niche_finder.sources.apify_social import build_input, parse
+
+    assert build_input("reddit", '"would pay for"', 50)["searches"] == ["would pay for"]
+    assert build_input("x", '"would pay for"', 50)["searchTerms"][0].startswith('"would pay for"')
+    assert build_input("threads", '"would pay for"', 50)["searchQuery"] == "would pay for"
+
+    r = parse("reddit", {"dataType": "post", "parsedId": "abc", "title": "is there an app", "body": "x",
+                         "parsedCommunityName": "mealprep", "upVotes": 12, "numberOfComments": 3,
+                         "url": "https://www.reddit.com/r/mealprep/comments/abc/", "createdAt": "2026-09-30T10:00:00.000Z"}, "q")
+    assert r["id"] == "reddit:abc" and r["community"] == "mealprep" and r["score"] == 12 and r["created_utc"]
+    assert parse("reddit", {"dataType": "comment", "id": "c1", "title": "t"}, "q") is None
+
+    x = parse("x", {"id": "1", "text": "would pay for", "likeCount": 4, "retweetCount": 1, "replyCount": 2,
+                    "url": "https://x.com/a/status/1", "createdAt": "Wed Sep 30 10:00:00 +0000 2026"}, "q")
+    assert x["score"] == 5 and x["comments"] == 2 and x["created_utc"]
+
+    t = parse("threads", {"post": {"id": "9", "code": "AbC", "caption": {"text": "need a tool"},
+                                   "user": {"username": "bob"}, "like_count": 7, "taken_at": 1790000000}}, "q")
+    assert t["body"] == "need a tool" and t["url"] == "https://www.threads.net/@bob/post/AbC" and t["score"] == 7

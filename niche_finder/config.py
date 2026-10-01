@@ -53,6 +53,9 @@ class Config:
     apify_token: str = ""
     apify_x_actor: str = ""
     apify_threads_actor: str = ""
+    apify_reddit_actor: str = ""
+    apify_pinterest_actor: str = ""
+    include_hackernews: bool = True
     proxies: list[str] = field(default_factory=list)
     trends_geos: list[str] = field(default_factory=list)
     pain_queries: list[str] = field(default_factory=lambda: list(PAIN_QUERIES))
@@ -74,6 +77,9 @@ class Config:
             apify_token=os.getenv("APIFY_TOKEN", ""),
             apify_x_actor=os.getenv("APIFY_X_ACTOR", ""),
             apify_threads_actor=os.getenv("APIFY_THREADS_ACTOR", ""),
+            apify_reddit_actor=os.getenv("APIFY_REDDIT_ACTOR", ""),
+            apify_pinterest_actor=os.getenv("APIFY_PINTEREST_ACTOR", ""),
+            include_hackernews=os.getenv("INCLUDE_HACKERNEWS", "1") != "0",
             proxies=_load_proxies(),
             trends_geos=[g.strip() for g in geos.split(",")],
         )

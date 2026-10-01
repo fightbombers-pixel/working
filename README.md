@@ -24,18 +24,24 @@ cp .env.example .env   # заповнити ключі
 
 ## Джерела і ключі
 
-| Джерело | Що дає | Як підключити | Обов'язково? |
-|---|---|---|---|
-| Reddit | болі, обговорення, ріст сабредитів | працює без ключів; з `REDDIT_CLIENT_ID/SECRET` (app типу *script* на reddit.com/prefs/apps) ліміти вищі й менше блоків | ні |
-| X | болі, скарги | `X_BEARER_TOKEN` (офіційний API, платний) **або** `APIFY_TOKEN` + `APIFY_X_ACTOR` | ні |
-| Threads | болі, скарги | `THREADS_ACCESS_TOKEN` (Threads API з дозволом `threads_keyword_search`, потрібен app review) **або** `APIFY_TOKEN` + `APIFY_THREADS_ACTOR` | ні |
-| Pinterest | зростаючі запити (ранній сигнал) | `PINTEREST_ACCESS_TOKEN` (бізнес-акаунт + app на developers.pinterest.com) | ні |
-| Google Trends | тренди по країнах (RSS) + ріст 5 років | без ключів | — |
-| Claude API | аналіз постів | `ANTHROPIC_API_KEY` | **так** |
+**Найпростіше: один `APIFY_TOKEN` закриває Reddit, X, Threads і Pinterest.** Apify сам використовує
+резидентні проксі, тому працює й із серверів/хмари, де Reddit і X блокують прямі запити.
 
-Для Apify: виберіть у apify.com/store актор для пошуку твітів/постів Threads, ID береться з URL
-(`username~actor-name`). Поле для запитів за замовчуванням `searchTerms`. Якщо в актора воно називається
-інакше, змініть `apify_query_field` у `sources/x.py` / `sources/threads.py`.
+| Джерело | Через Apify (за замовчуванням) | Офіційний API (якщо є ключ — має пріоритет) |
+|---|---|---|
+| Reddit | `trudax~reddit-scraper-lite` | `REDDIT_CLIENT_ID/SECRET` (app типу *script*) |
+| X | `apidojo~tweet-scraper` | `X_BEARER_TOKEN` (платний) |
+| Threads | `igview-owner~threads-search-scraper` | `THREADS_ACCESS_TOKEN` (потрібен app review у Meta) |
+| Pinterest Trends | `automation-lab~pinterest-trends-scraper` | `PINTEREST_ACCESS_TOKEN` (бізнес-акаунт) |
+| Google Trends | — | без ключів (RSS + pytrends) |
+| Hacker News | — | без ключів (вимкнути: `INCLUDE_HACKERNEWS=0`) |
+
+Актори можна замінити змінними `APIFY_REDDIT_ACTOR`, `APIFY_X_ACTOR`, `APIFY_THREADS_ACTOR`,
+`APIFY_PINTEREST_ACTOR`. Якщо новий актор повертає дані в іншому форматі, у лозі буде попередження
+зі списком його полів — тоді треба поправити `parse()` у `sources/apify_social.py`.
+
+**Аналіз постів:** або `ANTHROPIC_API_KEY` (команда `analyze`, повністю автоматично), або без ключа —
+`export` → проаналізувати файл у чаті з Claude → `import-ideas` + `mark-analyzed`.
 
 ## Запуск
 
@@ -45,6 +51,11 @@ python -m niche_finder collect      # тільки збір постів
 python -m niche_finder analyze      # тільки аналіз нових постів
 python -m niche_finder trends       # Google/Pinterest тренди + перевірка росту
 python -m niche_finder report       # звіт з того, що вже в базі
+
+# аналіз без API-ключа (наприклад, у чаті з Claude):
+python -m niche_finder export --file data/posts_export.json
+python -m niche_finder import-ideas --file data/ideas.json
+python -m niche_finder mark-analyzed --file data/posts_export.json
 ```
 
 Запускайте раз на тиждень (cron): `0 9 * * 1 cd /path/to/repo && python -m niche_finder run`.
