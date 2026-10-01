@@ -133,20 +133,23 @@ def test_low_volume_growth_is_ignored():
 def test_apify_social_inputs_and_parsing():
     from niche_finder.sources.apify_social import build_input, parse
 
-    assert build_input("reddit", '"would pay for"', 50)["searches"] == ["would pay for"]
+    assert build_input("reddit", '"would pay for"', 50)["queries"] == ['"would pay for"']
     assert build_input("x", '"would pay for"', 50)["searchTerms"][0].startswith('"would pay for"')
-    assert build_input("threads", '"would pay for"', 50)["searchQuery"] == "would pay for"
+    assert build_input("threads", '"would pay for"', 50)["keywords"] == ["would pay for"]
 
-    r = parse("reddit", {"dataType": "post", "parsedId": "abc", "title": "is there an app", "body": "x",
-                         "parsedCommunityName": "mealprep", "upVotes": 12, "numberOfComments": 3,
-                         "url": "https://www.reddit.com/r/mealprep/comments/abc/", "createdAt": "2026-09-30T10:00:00.000Z"}, "q")
+    r = parse("reddit", {"kind": "post", "id": "abc", "title": "is there an app", "body": "x",
+                         "subreddit": "mealprep", "score": 12, "num_comments": 3,
+                         "permalink": "/r/mealprep/comments/abc/x/", "created_utc": 1790000000}, "q")
     assert r["id"] == "reddit:abc" and r["community"] == "mealprep" and r["score"] == 12 and r["created_utc"]
-    assert parse("reddit", {"dataType": "comment", "id": "c1", "title": "t"}, "q") is None
+    assert r["url"] == "https://www.reddit.com/r/mealprep/comments/abc/x/"
+    assert parse("reddit", {"kind": "comment", "id": "c1", "title": "t"}, "q") is None
 
     x = parse("x", {"id": "1", "text": "would pay for", "likeCount": 4, "retweetCount": 1, "replyCount": 2,
                     "url": "https://x.com/a/status/1", "createdAt": "Wed Sep 30 10:00:00 +0000 2026"}, "q")
     assert x["score"] == 5 and x["comments"] == 2 and x["created_utc"]
 
-    t = parse("threads", {"post": {"id": "9", "code": "AbC", "caption": {"text": "need a tool"},
-                                   "user": {"username": "bob"}, "like_count": 7, "taken_at": 1790000000}}, "q")
-    assert t["body"] == "need a tool" and t["url"] == "https://www.threads.net/@bob/post/AbC" and t["score"] == 7
+    t = parse("threads", {"record_type": "post", "post_code": "AbC", "text_content": "need a tool",
+                          "post_url": "https://www.threads.com/@bob/post/AbC", "like_count": 7, "reply_count": 1,
+                          "created_at_timestamp": 1790000000}, "q")
+    assert t["id"] == "threads:AbC" and t["body"] == "need a tool" and t["score"] == 7 and t["created_utc"]
+    assert parse("threads", {"record_type": "profile", "username": "bob"}, "q") is None

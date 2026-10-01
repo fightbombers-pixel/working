@@ -29,9 +29,9 @@ cp .env.example .env   # заповнити ключі
 
 | Джерело | Через Apify (за замовчуванням) | Офіційний API (якщо є ключ — має пріоритет) |
 |---|---|---|
-| Reddit | `trudax~reddit-scraper-lite` | `REDDIT_CLIENT_ID/SECRET` (app типу *script*) |
+| Reddit | `fatihtahta~reddit-scraper-search-fast` | `REDDIT_CLIENT_ID/SECRET` (app типу *script*) |
 | X | `apidojo~tweet-scraper` | `X_BEARER_TOKEN` (платний) |
-| Threads | `igview-owner~threads-search-scraper` | `THREADS_ACCESS_TOKEN` (потрібен app review у Meta) |
+| Threads | `futurizerush~meta-threads-scraper` | `THREADS_ACCESS_TOKEN` (потрібен app review у Meta) |
 | Pinterest Trends | `automation-lab~pinterest-trends-scraper` | `PINTEREST_ACCESS_TOKEN` (бізнес-акаунт) |
 | Google Trends | — | без ключів (RSS + pytrends) |
 | Hacker News | — | без ключів (вимкнути: `INCLUDE_HACKERNEWS=0`) |
@@ -39,6 +39,10 @@ cp .env.example .env   # заповнити ключі
 Актори можна замінити змінними `APIFY_REDDIT_ACTOR`, `APIFY_X_ACTOR`, `APIFY_THREADS_ACTOR`,
 `APIFY_PINTEREST_ACTOR`. Якщо новий актор повертає дані в іншому форматі, у лозі буде попередження
 зі списком його полів — тоді треба поправити `parse()` у `sources/apify_social.py`.
+
+**Вартість Apify** (тариф Free дає $5 на місяць): один прогін — 10 запитів × (50 Reddit + 100 X + 30 Threads)
++ тренди Pinterest — приблизно $2. Тобто 2 прогони на місяць безкоштовно, щотижня — близько $8–10/міс.
+Ліміти на запит — `DEFAULT_CAPS` у `sources/apify_social.py`.
 
 **Аналіз постів:** або `ANTHROPIC_API_KEY` (команда `analyze`, повністю автоматично), або без ключа —
 `export` → проаналізувати файл у чаті з Claude → `import-ideas` + `mark-analyzed`.
