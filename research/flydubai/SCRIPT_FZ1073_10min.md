@@ -1,6 +1,6 @@
 # СЦЕНАРІЙ: Flydubai FZ1073 — 10 хв, 3D + документальні вставки
 
-Колаба Revela × Lume · текст станом на 01.10.2026 · 1 356 слів VO (≈9:10 голосу при 148 wpm) + ~50 с пауз і вставок з оригінальним звуком = ≈10:00
+Колаба Revela × Lume · текст станом на 01.10.2026 · 1 417 слів VO (≈9:35 голосу при 148 wpm) + ~45 с пауз і вставок з оригінальним звуком = ≈10:20; щоб влізти в 10:00 — темп 152 wpm або скоротити паузи
 
 **Назва (варіанти, A/B-тест):**
 1. **The Pilot Attacked Mid-Flight — Who Was Flying This Plane?** ← рекомендую
@@ -129,7 +129,7 @@
 >
 > The descent was so violent that, according to the Aviation Herald and CNN, much of the rudder — the vertical part of the tail — was torn away.
 >
-> A few minutes later, the transponder switches to seventy-seven hundred: general emergency. Then — sources put it between five thirty-five and five thirty-eight — it changes to seventy-five hundred.
+> At five twenty-eight, the transponder switches to seventy-seven hundred: general emergency. About seven minutes later, it changes to seventy-five hundred.
 >
 > Every air traffic controller in the world knows what that code means: unlawful interference.
 >
@@ -145,7 +145,7 @@
 | 3 | [3D] Штурвал різко йде вперед |
 | 4 | [ГРАФІКА] Три цитати-картки: «knife» (passengers) / «stabbed or hit with an axe» (Netanyahu) / «altercation» (flydubai) — плашка «CLAIMS DIFFER» |
 | 6 | [3D] Ззовні: 737 переходить у піке, пустеля летить назустріч |
-| 6 | [ГРАФІКА] Графік ADS-B: «−14,125 ft in 29 s», потім підйом, потім ще падіння; позначка «unofficial data» |
+| 6 | [ГРАФІКА] Графік ADS-B: «−14,125 ft in 29 s», потім підйом, потім ще падіння; лічильник вертикальної швидкості до «−30,900 ft/min» (AirNavRadar); позначка «unofficial data» |
 | (пауза 3) | [ЗВУК] вітер, вібрація фюзеляжу |
 | 7 | [АРХІВ] NBC youtu.be/-u7x3-6JHV8 @ 0:30 — піке, крики в салоні |
 | 5 | [3D] Салон сповільнено: предмети злітають, маски кисню (не підтверджено — подати як атмосферу без кисневих масок, якщо немає джерела) |
@@ -153,7 +153,7 @@
 | 6 | [ГРАФІКА] Дві версії піке: «jamming the controls (Netanyahu)» vs «captain collapsed on yoke (passenger, TMZ)» → «Flight recorders: pending» |
 | 5 | [3D] Хвіст: кермо напрямку зривається, уламки в повітрі |
 | 4 | [АРХІВ] NBC @ 3:37 — фото/кадр пошкодженого хвоста після посадки |
-| 8 | [ГРАФІКА] Транспондер: «7700 · EMERGENCY» (05:28–05:31 UTC) → «7500 · UNLAWFUL INTERFERENCE» (05:35–05:38 UTC); на екрані радара диспетчера мигає червоним |
+| 8 | [ГРАФІКА] Транспондер: «7700 · EMERGENCY · 05:28:48 UTC» → «7500 · UNLAWFUL INTERFERENCE · 05:35 UTC» (AirNavRadar, Al Jazeera); на екрані радара диспетчера мигає червоним |
 | 4 | [3D] Пара винищувачів злітає (силует, без конкретних бортових номерів) |
 | 6 | [АРХІВ] BBC youtu.be/NH_To8jw0YU @ 3:50 — Moti Kona: «At one stage, there was no pilots…» (його голос, субтитри) |
 
@@ -161,9 +161,11 @@
 
 > And this is where the door comes back.
 >
-> According to Israeli officials, the wounded captain — bleeding, still in the cockpit — managed to unlock it. NBC, citing those officials, reported he pressed the button with his foot.
+> Near the front of the cabin, a passenger hears shouting coming from behind it. She alerts one of the off-duty pilots sitting nearby.
 >
-> A crew member and passengers rushed in.
+> According to Israeli officials, the wounded captain — bleeding, still in the cockpit — managed to unlock the door. NBC, citing those officials, reported he pressed the button with his foot.
+>
+> The off-duty pilot called for help. Passengers rushed in.
 >
 > Yaniv Hayun, a plumber from Israel, says he was one of them.
 >
@@ -175,14 +177,15 @@
 >
 > His account hasn't been independently verified. But the flight data does show the jet levelling off at around fifteen thousand feet.
 >
-> In the aisle, three men pinned the first officer down.
+> In the aisle, three men pinned the first officer down and tied him up with the cables from the in-flight headphones.
 >
-> "Three of us jumped on him with all our strength," passenger Tzvika Manes told the Times of Israel, "and tied him up with the multimedia headphones."
+> "I'm covered in blood," one of them, Tzvika Manes, said afterwards. "It was insane."
 >
-> And then the two pilots who had been sitting as passengers walked into the cockpit — and took control of Flight 1073.
+> A doctor on board bandaged the captain. And the off-duty pilots took the controls of Flight 1073.
 
 | ~с | Кадр |
 |---|---|
+| 4 | [3D] Перший ряд: жінка біля кабіни повертає голову на звук; торкається плеча чоловіка в білій сорочці |
 | 4 | [3D] Двері кабіни повільно відчиняються зсередини, в салон б'є світло |
 | 4 | [3D] Нога натискає кнопку на пульті (узагальнено) |
 | 4 | [АРХІВ] NBC @ 2:15 — пасажири йдуть до кабіни |
@@ -266,6 +269,8 @@
 >
 > After Germanwings, Europe recommended that two people always be in the cockpit — and then dropped that recommendation a year later.
 >
+> And there's another gap. Airliners must record cockpit audio and flight data — but not video. America's NTSB has pushed for cockpit cameras for years. Pilots' unions oppose them over privacy. So when investigators try to reconstruct what happened between those two seats, there will be no picture.
+>
 > It's important to keep this in proportion. Deliberate acts by pilots are extremely rare, and flying remains one of the safest things you can do.
 >
 > But on Flight 1073, the same reinforced door that was built to protect the pilots could have sealed everyone's fate — until the man who had been stabbed reached it first.
@@ -275,6 +280,7 @@
 | 5 | [3D] Порожня кабіна, двері зачинені, повільний наїзд |
 | 6 | [ГРАФІКА] Цитата Philip Baum на екрані |
 | 6 | [ГРАФІКА] «Two-person rule: 2015 → dropped 2016 (EASA)» |
+| 6 | [ГРАФІКА] «CVR ✔ · FDR ✔ · VIDEO ✘» — три іконки, третя перекреслена (The National, 01.10) |
 | 6 | [3D] Аеропорт, десятки літаків на стоянці — «пропорція» |
 | 6 | [3D] Рука капітана тягнеться до кнопки; зупинка кадру |
 | (пауза 3) | [ЗВУК] клацання замка |
@@ -304,20 +310,22 @@
 | 1 Відомо/невідомо | 0:40–1:10 | 71 |
 | 2 Звичайний рейс | 1:10–2:05 | 124 |
 | 3 Двері | 2:05–2:50 | 106 |
-| 4 Напад і піке | 2:50–4:55 | 283 |
-| 5 Порятунок | 4:55–6:20 | 189 |
+| 4 Напад і піке | 2:50–4:55 | 276 |
+| 5 Порятунок | 4:55–6:20 | 210 |
 | 6 Посадка | 6:20–7:25 | 140 |
 | 7 Хто і чому | 7:25–8:30 | 157 |
-| 8 Система | 8:30–9:25 | 117 |
+| 8 Система | 8:30–9:25 | 164 |
 | 9 Фінал | 9:25–10:00 | 77 |
-| **Разом** | **10:00** | **1 356** (≈9:10 голосу + ≈50 с пауз і архіву з оригінальним звуком) |
+| **Разом** | **~10:20** | **1 417** (≈9:35 голосу + ≈45 с пауз і архіву) |
 
 ## Перед записом — звірити (правило 1)
 
 - Цифри зниження: у VO лише «14,125 ft / 29 s (Flightradar24 через NBC)» і «below 17,000 ft within about a minute» (Al Jazeera). Інші версії (17,400; 19,000; 20,000) — не використовувати.
 - «Pressed the button with his foot» — одне джерело (NBC з посиланням на ізраїльських чиновників); у VO вже з атрибуцією.
 - Цитата Hayun і «pulled the yoke» — його власні слова, незалежно не перевірені; у VO так і сказано.
-- Час 7500: у VO діапазон 05:35–05:38 (джерела розходяться).
+- Час сквоків: 7700 о 05:28:48 і 7500 о 05:35 UTC — AirNavRadar + Al Jazeera timeline (2 джерела); AeroTime/Migflug дають 05:31/05:38.
+- «−30,900 ft/min» — одне джерело (AirNavRadar), лише на графіці з підписом.
+- Послідовність порятунку (дружина Манеса почула крики → резервний пілот → «called for help») — Calcalist (Manes) + Times of Israel.
 - Механіка дверей 737 у блоці 3 — узагальнено; конкретні перемикачі для 3D звірити з пілотом-консультантом або FCOM.
 - Germanwings: 150 загиблих = 144 пасажири + 6 екіпажу; «149 other people» — тобто всі, крім самого пілота. Звірити формулювання.
 - Статистика EASA (правило двох — рекомендація 2015, скасована 2016) — з Wikipedia; бажано друге джерело.
