@@ -48,6 +48,28 @@ CREATE TABLE IF NOT EXISTS trend_checks (
     checked_at TEXT DEFAULT (date('now')),
     PRIMARY KEY (keyword, geo, checked_at)
 );
+CREATE TABLE IF NOT EXISTS yt_videos (
+    id TEXT PRIMARY KEY,
+    channel_id TEXT NOT NULL,
+    title TEXT,
+    published_at TEXT,
+    duration_s INTEGER,
+    is_short INTEGER,
+    views INTEGER,
+    likes INTEGER,
+    comments INTEGER,
+    outlier REAL,
+    fetched_at TEXT DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS viral_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel_id TEXT NOT NULL,
+    channel_title TEXT,
+    name TEXT,
+    score REAL,
+    data TEXT,
+    created_at TEXT DEFAULT (datetime('now'))
+);
 CREATE INDEX IF NOT EXISTS idx_ideas_keyword ON ideas(keyword);
 """
 

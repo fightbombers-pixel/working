@@ -105,14 +105,35 @@ def report(cfg: Config, conn, days: int, min_mentions: int) -> None:
     log.info("%d niches -> %s, %s", len(niches), csv_path, md_path)
 
 
+def viral(cfg: Config, conn, channels: list[str], limit: int, top: int, check: bool, lang: str) -> None:
+    from .sources.youtube import YouTubeSource
+    from .viral import analyze_channel, write_report
+
+    yt = YouTubeSource(HttpClient(cfg.proxies, min_interval=0.2), cfg.youtube_api_key)
+    if not yt.enabled:
+        raise SystemExit("viral: потрібен YOUTUBE_API_KEY у .env")
+    if not channels:
+        raise SystemExit("viral: вкажіть канал, напр. python -m niche_finder viral @UselessMoney")
+    for ref in channels:
+        channel, result, outliers = analyze_channel(yt, conn, ref, cfg.anthropic_model, limit=limit, top=top,
+                                                    check=check, lang=lang)
+        path = write_report(channel, result, outliers, cfg.reports_dir)
+        log.info("%s: %d formulas -> %s", channel["title"], len(result["patterns"]), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run"])
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral"])
+    parser.add_argument("channels", nargs="*", help="для viral: @handle, URL або id каналів")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
     parser.add_argument("--check-top", type=int, default=25, help="скільки ключових слів перевірити в Google Trends")
     parser.add_argument("--days", type=int, default=30)
     parser.add_argument("--min-mentions", type=int, default=2)
+    parser.add_argument("--videos", type=int, default=200, help="viral: скільки останніх відео каналу брати")
+    parser.add_argument("--top", type=int, default=25, help="viral: скільки outlier-відео давати Claude")
+    parser.add_argument("--no-check", action="store_true", help="viral: не перевіряти формули на інших каналах")
+    parser.add_argument("--lang", default="Ukrainian", help="viral: мова пояснень у звіті")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -129,3 +150,5 @@ def main(argv: list[str] | None = None) -> None:
         trends(cfg, conn, args.check_top)
     if args.command in ("report", "run"):
         report(cfg, conn, args.days, args.min_mentions)
+    if args.command == "viral":
+        viral(cfg, conn, args.channels, args.videos, args.top, not args.no_check, args.lang)

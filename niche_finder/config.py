@@ -51,6 +51,7 @@ class Config:
     pinterest_access_token: str = ""
     pinterest_regions: list[str] = field(default_factory=list)
     apify_token: str = ""
+    youtube_api_key: str = ""
     apify_x_actor: str = ""
     apify_threads_actor: str = ""
     proxies: list[str] = field(default_factory=list)
@@ -72,6 +73,7 @@ class Config:
             pinterest_access_token=os.getenv("PINTEREST_ACCESS_TOKEN", ""),
             pinterest_regions=[r.strip() for r in os.getenv("PINTEREST_REGIONS", "").split(",") if r.strip()],
             apify_token=os.getenv("APIFY_TOKEN", ""),
+            youtube_api_key=os.getenv("YOUTUBE_API_KEY", ""),
             apify_x_actor=os.getenv("APIFY_X_ACTOR", ""),
             apify_threads_actor=os.getenv("APIFY_THREADS_ACTOR", ""),
             proxies=_load_proxies(),
