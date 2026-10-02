@@ -77,6 +77,7 @@ def wiki_series(http: HttpClient, article: str, end: date, days: int = 30,
 
 def wiki_summary(http: HttpClient, article: str, project: str = "en.wikipedia") -> dict:
     lang = project.split(".")[0]
+    time.sleep(0.5)
     try:
         resp = http.get(f"https://{lang}.wikipedia.org/api/rest_v1/page/summary/{quote(article, safe='')}",
                         headers={"User-Agent": UA})
@@ -230,7 +231,7 @@ def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date |
             continue
         summ = wiki_summary(http, art)
         kind = classify(summ)
-        if kind == "не наше":
+        if kind not in ("розслідування", "хвиля від релізу"):  # знаменитості, спорт, шоу — не для Revela
             continue
         out.append({"article": art, "title": art.replace("_", " "), "series": series, "momentum": m,
                     "kind": kind, "summary": summ})
