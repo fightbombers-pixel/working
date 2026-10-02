@@ -133,9 +133,13 @@ def test_low_volume_growth_is_ignored():
 def test_apify_social_inputs_and_parsing():
     from niche_finder.sources.apify_social import build_input, parse
 
-    assert build_input("reddit", '"would pay for"', 50)["queries"] == ['"would pay for"']
-    assert build_input("x", '"would pay for"', 50)["searchTerms"][0].startswith('"would pay for"')
-    assert build_input("threads", '"would pay for"', 50)["keywords"] == ["would pay for"]
+    qs = ['"would pay for"', '"is there an app"']
+    assert build_input("reddit", qs, 50)["queries"] == qs
+    x_in = build_input("x", qs, 50)
+    assert x_in["twitterContent"].startswith('("would pay for" OR "is there an app")') and x_in["maxItems"] == 100
+    assert x_in["from"] == ""  # інакше актор підставляє свій приклад (elonmusk)
+    assert build_input("threads", qs, 5)["keywords"] == ["would pay for", "is there an app"]
+    assert build_input("threads", qs, 5)["max_posts"] == 10  # мінімум актора
 
     r = parse("reddit", {"kind": "post", "id": "abc", "title": "is there an app", "body": "x",
                          "subreddit": "mealprep", "score": 12, "num_comments": 3,

@@ -26,38 +26,52 @@ def collect(cfg: Config, conn, limit: int) -> None:
     apify = ApifySocial(http, cfg.apify_token, {"reddit": cfg.apify_reddit_actor, "x": cfg.apify_x_actor,
                                                 "threads": cfg.apify_threads_actor})
 
-    # Пріоритет: офіційний API, якщо є ключ; інакше Apify; інакше (тільки Reddit) публічний .json
+    def per_query(search):
+        """Обгортка для джерел, які шукають по одному запиту."""
+        def run(queries, limit):
+            posts = []
+            for q in queries:
+                try:
+                    posts += search(q, limit=limit)
+                except requests.HTTPError as exc:
+                    status = getattr(exc.response, "status_code", None)
+                    if status in (401, 403):
+                        raise
+                    log.error("%s: %s", q, exc)
+            return posts
+        return run
+
+    # Пріоритет: офіційний API, якщо є ключ; інакше Apify (один запуск на всі запити); інакше публічний .json
+    from .sources.apify_social import THREADS_QUERIES
+    queries = cfg.pain_queries
     sources = []
-    if cfg.reddit_client_id:
-        sources.append(("reddit", reddit.search))
-    elif apify.enabled:
-        sources.append(("reddit", apify.searcher("reddit")))
+    if cfg.reddit_client_id or not apify.enabled:
+        sources.append(("reddit", per_query(reddit.search), queries))
     else:
-        sources.append(("reddit", reddit.search))
+        sources.append(("reddit", lambda qs, n: apify.search_many("reddit", qs, n), queries))
     for name, official in (("x", x), ("threads", threads)):
+        qs = THREADS_QUERIES if name == "threads" else queries
         if official.enabled:
-            sources.append((name, official.search))
+            sources.append((name, per_query(official.search), qs))
         elif apify.enabled:
-            sources.append((name, apify.searcher(name)))
+            sources.append((name, lambda q, n, name=name: apify.search_many(name, q, n), qs))
         else:
             log.warning("%s: немає ні офіційного токена, ні APIFY_TOKEN — пропускаю", name)
     if cfg.include_hackernews:
-        sources.append(("hackernews", HackerNewsSource(http).search))
+        sources.append(("hackernews", per_query(HackerNewsSource(http).search), queries))
 
-    for name, search in sources:
-        for q in cfg.pain_queries:
-            try:
-                posts = search(q, limit=limit)
-            except Exception as exc:  # одне джерело не повинно валити весь збір
-                log.error("%s %s: %s", name, q, exc)
-                status = getattr(getattr(exc, "response", None), "status_code", None)
-                if isinstance(exc, requests.HTTPError) and status in (401, 403):
-                    log.error("%s: доступ заборонено (%s) — пропускаю джерело. Для Reddit з хмарних IP "
-                              "потрібні REDDIT_CLIENT_ID/SECRET або резидентний проксі", name, status)
-                    break
-                continue
-            new = db.upsert_posts(conn, posts)
-            log.info("%s %s: %d posts, %d new", name, q, len(posts), new)
+    for name, run, qs in sources:
+        try:
+            posts = run(qs, limit)
+        except Exception as exc:  # одне джерело не повинно валити весь збір
+            status = getattr(getattr(exc, "response", None), "status_code", None)
+            hint = (" — для Reddit з хмарних IP потрібні REDDIT_CLIENT_ID/SECRET або APIFY_TOKEN"
+                    if name == "reddit" and status in (401, 403) else "")
+            log.error("%s: %s%s", name, exc, hint)
+            continue
+        new = db.upsert_posts(conn, posts)
+        by_query = Counter(p["query"] for p in posts)
+        log.info("%s: %d posts, %d new  %s", name, len(posts), new, dict(by_query.most_common(5)))
 
     # Ріст сабредитів: знімок кількості підписників раз на день
     subs = Counter(r["community"] for r in conn.execute(
@@ -90,7 +104,7 @@ def trends(cfg: Config, conn, check_top: int) -> None:
     elif cfg.apify_token:
         apify = ApifySocial(http, cfg.apify_token, {"pinterest_trends": cfg.apify_pinterest_actor})
         try:
-            items = apify.pinterest_trends(cfg.pinterest_regions or ["US", "GB", "CA", "DE", "FR", "BR", "AU"])
+            items = apify.pinterest_trends(cfg.pinterest_regions or ["US", "GB+IE", "CA", "DE", "FR", "BR", "AU+NZ", "IN"])
             by_country: dict[str, list] = {}
             for t in items:
                 by_country.setdefault(t["country"], []).append(t)

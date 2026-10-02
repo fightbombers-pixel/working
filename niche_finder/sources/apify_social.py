@@ -5,7 +5,7 @@ Apify сам підставляє резидентні проксі, тому п
 але тоді може знадобитися правка build_input/parse під їхній формат.
 """
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from ..net import HttpClient
 from .apify import first, run_actor
@@ -13,31 +13,48 @@ from .apify import first, run_actor
 log = logging.getLogger(__name__)
 
 # Обрані за ціною (pay-per-result, тариф Free, жовтень 2026):
-# reddit ~$1.5 / 1000 постів, x ~$0.4 / 1000 твітів, threads ~$2.5 / 1000 + $0.02 за запуск,
+# reddit ~$1.5 / 1000 постів, x ~$0.25 / 1000 твітів, threads ~$2.5 / 1000 + $0.02 за запуск,
 # pinterest trends ~$1.15 / 1000 трендів
 DEFAULT_ACTORS = {
     "reddit": "fatihtahta~reddit-scraper-search-fast",
-    "x": "apidojo~tweet-scraper",
+    "x": "kaitoeasyapi~twitter-x-data-tweet-scraper-pay-per-result-cheapest",
     "threads": "futurizerush~meta-threads-scraper",
     "pinterest_trends": "automation-lab~pinterest-trends-scraper",
 }
+
+# Threads-пошук погано шукає довгі фрази — для нього короткі запити
+THREADS_QUERIES = ["recommend an app", "app recommendation", "wish there was an app", "would pay for",
+                   "looking for a tool", "alternative to", "need an app"]
 
 # Скільки постів брати на один пошуковий запит — головний регулятор вартості.
 # 10 запитів × (50 reddit + 100 x + 30 threads) ≈ $2 за прогін на тарифі Free.
 DEFAULT_CAPS = {"reddit": 50, "x": 100, "threads": 30}
 
 
-def build_input(platform: str, query: str, limit: int) -> dict:
+def build_input(platform: str, queries: list[str], per_query: int) -> dict:
+    """Один запуск актора на всі запити — дешевше (менше плати за старт) і не впирається в ліміти запусків."""
     if platform == "reddit":
-        return {"queries": [query], "sort": "new", "timeframe": "month", "maxPosts": limit,
+        return {"queries": queries, "sort": "new", "timeframe": "month", "maxPosts": per_query,
                 "scrapeComments": False, "includeNsfw": False, "strictSearch": True}
     if platform == "x":
-        return {"searchTerms": [f"{query} -filter:retweets"], "maxItems": limit,
-                "sort": "Latest", "tweetLanguage": "en"}
+        now = datetime.now(timezone.utc)
+        return {"twitterContent": "(" + " OR ".join(queries) + ") -filter:links",
+                "maxItems": per_query * len(queries), "queryType": "Latest", "lang": "en",
+                "from": "", "min_faves": 3,  # min_faves відсікає спам, якого в «Latest» дуже багато
+                "since": (now - timedelta(days=30)).strftime("%Y-%m-%d_%H:%M:%S_UTC"),
+                "until": (now + timedelta(days=1)).strftime("%Y-%m-%d_%H:%M:%S_UTC")}
     if platform == "threads":
-        return {"mode": "search", "keywords": [query.strip('"')], "search_filter": "recent",
-                "max_posts": limit, "search_language": "english"}
+        return {"mode": "search", "keywords": [q.strip('"') for q in queries], "search_filter": "recent",
+                "max_posts": max(10, per_query)}
     raise ValueError(platform)
+
+
+def match_query(text: str, queries: list[str]) -> str:
+    low = text.lower()
+    for q in queries:
+        if q.strip('"').lower() in low:
+            return q
+    return queries[0] if len(queries) == 1 else "mixed"
 
 
 def _ts(value) -> float | None:
@@ -128,16 +145,22 @@ class ApifySocial:
     def enabled(self) -> bool:
         return bool(self.token)
 
-    def searcher(self, platform: str):
-        def search(query: str, limit: int = 100) -> list[dict]:
-            limit = min(limit, self.caps.get(platform, limit))
-            items = run_actor(self.http, self.token, self.actors[platform], build_input(platform, query, limit))
-            posts = [p for p in (parse(platform, i, query) for i in items) if p]
-            if items and not posts:
-                log.warning("%s: актор повернув %d елементів, але жоден не розпізнано. Ключі першого: %s",
-                            platform, len(items), sorted(items[0].keys())[:25])
-            return posts
-        return search
+    def search_many(self, platform: str, queries: list[str], per_query: int = 100) -> list[dict]:
+        per_query = min(per_query, self.caps.get(platform, per_query))
+        items = run_actor(self.http, self.token, self.actors[platform], build_input(platform, queries, per_query),
+                          timeout=900)
+        posts = []
+        for i in items:
+            post = parse(platform, i, "")
+            if not post:
+                continue
+            source_query = first(i, "query", "search_keyword")
+            post["query"] = source_query or match_query(f"{post['title']} {post['body']}", queries)
+            posts.append(post)
+        if items and not posts:
+            log.warning("%s: актор повернув %d елементів, але жоден не розпізнано. Ключі першого: %s",
+                        platform, len(items), sorted(items[0].keys())[:25])
+        return posts
 
     def pinterest_trends(self, countries: list[str], trend_types: list[str] | None = None,
                          per_country: int = 50) -> list[dict]:
