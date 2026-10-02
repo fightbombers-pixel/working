@@ -132,3 +132,10 @@ def test_outlier_score_skips_newest_and_news_channels():
     assert outlier_score({"id": "x", "views": 30_000}, news)["x"] is None
     assert published("3 days ago", date(2026, 10, 2)) == "2026-09-29"
     assert not is_relevant({"title": "Mitti De Baway Ep 03 (Sub)"})
+
+
+def test_news_channel_split():
+    from niche_finder.outliers import is_news
+
+    assert is_news("CBS News") and is_news("WLWT") and is_news("Law&Crime Trials")
+    assert not is_news("Coffeezilla") and not is_news("Internet Anarchist") and not is_news("KAYE")

@@ -32,6 +32,20 @@ QUERIES = ["investigation", "exposed", "what happened", "the truth about", "down
 JUNK = re.compile(r"episode|\bep\.? ?\d|full movie|free movie|eng sub|\bsub\)|disguised|homeless|romance|love story|"
                   r"drama review|minecraft|roblox|fortnite|marries|reacts? to|reaction|livestream|highlights|"
                   r"billionaire .*(wife|heir|ceo)|full review|【|#", re.I)
+NEWS_RE = re.compile(r"\bnews\b|\bnbc\b|\bcbs\b|\babc\d*\b|\bfox \d+|^fox news|\bcnn\b|\bbbc\b|\bsky (news|sports)|\bdw (news|documentary)|al jazeera|\bwion\b|court ?tv|court trials tv|law ?& ?crime|reuters|associated press|"
+ r"^the guardian|the independent|telegraph|hindustan times|economic times|new york post|\bforbes\b|bloomberg|cnbc|msnbc|^ms now$|newsmax|gb news|talktv|talksport|itv (news|sport)|"
+ r"\bpbs\b|frontline|60 minutes|^today$|usa today|india today|business today|inside edition|tmz|e! news|entertainment tonight|access hollywood|^the (sun|mirror)$|mirror now|"
+ r"daily mail|yahoo|abs-cbn|^gma |\bnhk\b|\bndtv\b|aaj tak|\bzee\b|wsj|wall street journal|new york times|washington post|vice news|business insider|euronews|france 24|cgtn|"
+ r"\btrt\b|11alive|dayton 24/7|east idaho news|senate of|c-span|parliament|scripps|straight arrow|the athletic|\bespn\b|\bdazn\b|livenow|cbs mornings|king 5|"
+ r"click on detroit|hum tv|har pal geo|ary digital|green tv entertainment|jamuna tv|sakshi tv|untv|taiwanplus|\bcbc\b|9 news|12 news|kare 11|abc7|kstp|koco|kgw",re.I)
+CALL_RE = re.compile(r"\b[KW][A-Z]{2,3}(-TV)?\b")   # американські місцеві станції (KARE, WLWT, WXMI)
+NOT_NEWS_RE = re.compile(r"kay rated|kaye|wild nature|some more news|my views on news|true crime news|down the rabbit hole|mo news|crime wire",re.I)
+def is_news(name):
+    name=name or ""
+    if NOT_NEWS_RE.search(name): return False
+    return bool(NEWS_RE.search(name) or CALL_RE.search(name))
+
+
 CTX = {"client": {"clientName": "WEB", "clientVersion": "2.20250925.01.00", "hl": "en", "gl": "US"}}
 
 
@@ -147,12 +161,14 @@ def find_outliers(queries: list[str] = QUERIES, min_minutes: int = 8, min_x: flo
         channels = dict(ex.map(stats, cids))
     for v in found.values():
         v["o"] = outlier_score(v, channels.get(v["cid"]))
+        v["news"] = is_news(v["channel"])
     vids = [v for v in found.values() if v["o"]]
     x = lambda v: v["o"]["x"] or 0
-    top = sorted([v for v in vids if x(v) >= min_x and v["views"] >= min_views], key=lambda v: -x(v))
-    small = sorted([v for v in vids if 0 < v["o"]["subs"] < 100_000 and v["views"] >= 3 * v["o"]["subs"]
+    top = sorted([v for v in vids if not v["news"] and x(v) >= min_x and v["views"] >= min_views], key=lambda v: -x(v))
+    news = sorted([v for v in vids if v["news"] and x(v) >= min_x and v["views"] >= min_views], key=lambda v: -x(v))
+    small = sorted([v for v in vids if not v["news"] and 0 < v["o"]["subs"] < 100_000 and v["views"] >= 3 * v["o"]["subs"]
                     and v["views"] >= 30_000], key=lambda v: -v["views"] / v["o"]["subs"])
-    return {"total": len(found), "outliers": top, "small": small}
+    return {"total": len(found), "outliers": top, "news": news, "small": small}
 
 
 def _fmt(n: int) -> str:
@@ -184,8 +200,9 @@ body{{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 -apple-system
 .vt{{font-size:13px;font-weight:600;padding:8px 8px 2px}}.vm{{font-size:12px;color:var(--mute);padding:0 8px 4px}}.x{{color:var(--hot)}}.mute{{color:var(--mute)}}
 </style></head><body><div class="wrap"><h1>Аутлаєри тижня — {date.today():%d.%m.%Y}</h1>
 <p class="mute">{res["total"]} довгих відео за 7 днів. ×N = перегляди ÷ медіана ~30 останніх відео каналу (без 5 найсвіжіших).</p>
-<h2>Найбільші аутлаєри</h2><div class="grid">{"".join(_card(v) for v in res["outliers"][:48])}</div>
+<h2>Найбільші аутлаєри — автори</h2><div class="grid">{"".join(_card(v) for v in res["outliers"][:48])}</div>
 <h2>Малі канали (до 100K), де відео набрало ≥3× від підписників</h2><div class="grid">{"".join(_card(v) for v in res["small"][:24])}</div>
+<h2>Новинні й ТВ-канали — окремо (сигнал теми, не формату)</h2><div class="grid">{"".join(_card(v) for v in res.get("news", [])[:24])}</div>
 </div></body></html>"""
     path.write_text(page, encoding="utf-8")
     return path
