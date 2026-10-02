@@ -60,6 +60,22 @@ class TrendsChecker:
         self.client = TrendReq(hl="en-US", tz=0, timeout=(10, 30), retries=0, proxies=list(proxies or []))
         self.pause = pause
 
+    def rising(self, seed: str, geo: str = "US", timeframe: str = "today 3-m",
+               attempts: int = 4) -> list[tuple[str, int]]:
+        """Зростаючі пов'язані запити: що почали шукати різко більше. value — % росту (Breakout ≈ 5000+)."""
+        for attempt in range(attempts):
+            try:
+                self.client.build_payload([seed], timeframe=timeframe, geo=geo)
+                df = self.client.related_queries().get(seed, {}).get("rising")
+                time.sleep(self.pause)
+                if df is None or df.empty:
+                    return []
+                return [(str(q).lower().strip(), int(v)) for q, v in zip(df["query"], df["value"])]
+            except Exception as exc:
+                log.warning("rising %r (%s), attempt %d: %s", seed, geo, attempt + 1, exc)
+                time.sleep(self.pause * (2 ** (attempt + 1)))
+        return []
+
     def check(self, keyword: str, geo: str = "", attempts: int = 4) -> tuple[float | None, float | None]:
         """Повертає (growth_ratio, seasonality) для ключового слова. geo="" — весь світ."""
         df = None

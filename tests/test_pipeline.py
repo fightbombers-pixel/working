@@ -157,3 +157,12 @@ def test_apify_social_inputs_and_parsing():
                           "created_at_timestamp": 1790000000}, "q")
     assert t["id"] == "threads:AbC" and t["body"] == "need a tool" and t["score"] == 7 and t["created_utc"]
     assert parse("threads", {"record_type": "profile", "username": "bob"}, "q") is None
+
+
+def test_scan_noise_and_score():
+    from niche_finder.scan import is_noise, score
+    assert is_noise("betmgm app download") and is_noise("nfl scores today") and is_noise("app")
+    assert not is_noise("magnesium spray for sleep")
+    weak = score({"max_value": 150, "n_geo": 1, "amazon": 0, "youtube": 0, "google": 1})
+    strong = score({"max_value": 5000, "n_geo": 3, "amazon": 8, "youtube": 6, "google": 8})
+    assert strong > weak and strong <= 10

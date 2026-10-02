@@ -182,7 +182,9 @@ def import_ideas(conn, path: str) -> None:
 
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "export", "import-ideas", "mark-analyzed"])
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "export", "import-ideas", "mark-analyzed", "scan"])
+    parser.add_argument("--geos", default="US,GB,CA,AU", help="країни для scan (коди Google Trends)")
+    parser.add_argument("--seeds", default="", help="свої базові слова для scan через кому (за замовчуванням — вбудований список)")
     parser.add_argument("--file", default="data/posts_export.json", help="файл для export / import-ideas / mark-analyzed")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
@@ -205,6 +207,12 @@ def main(argv: list[str] | None = None) -> None:
         trends(cfg, conn, args.check_top)
     if args.command in ("report", "run"):
         report(cfg, conn, args.days, args.min_mentions)
+    if args.command == "scan":
+        from .scan import SEEDS, scan
+        seeds = [s.strip() for s in args.seeds.split(",") if s.strip()] or SEEDS
+        md = scan(conn, [g.strip() for g in args.geos.split(",")], seeds, cfg.reports_dir,
+                  check_top=args.check_top if args.check_top != 25 else 300, proxies=cfg.proxies)
+        log.info("report -> %s", md)
     if args.command == "export":
         export_posts(conn, args.file, args.max_posts)
     if args.command == "import-ideas":
