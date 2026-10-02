@@ -117,7 +117,7 @@ def classify(summary: dict) -> str:
     if WAVE.search(summary.get("description", "")) and INVESTIGATE.search(text):
         return "хвиля від релізу"
     if NOT_INVESTIGATE.search(summary.get("description", "")) and not INVESTIGATE.search(text):
-        return "не наше"
+        return "люди/шоу/спорт"
     return "розслідування" if INVESTIGATE.search(text) else "інше"
 
 
@@ -140,7 +140,7 @@ def score(m: dict, supply: dict, kind: str, platforms: int = 0) -> dict:
     demand = min(3.0, math.log10(1 + m["last"]) - 2)            # 1k → 1, 10k → 2, 100k+ → 3
     accel = min(3.0, math.log2(max(1.0, m["accel"])))           # 2× → 1, 4× → 2, 8×+ → 3
     gap = 2.0 if supply.get("long", 0) == 0 else max(0.0, 2.0 - supply["long"] / 3)
-    fit = {"розслідування": 2.0, "хвиля від релізу": 1.5, "інше": 1.0, "не наше": 0.0}[kind]
+    fit = {"розслідування": 2.0, "хвиля від релізу": 1.5, "інше": 1.0, "люди/шоу/спорт": 0.5}.get(kind, 1.0)
     early = 1.0 if m["phase"] in ("росте зараз", "розгін") and m["last"] < 300_000 else 0.0
     cross = min(2.0, float(platforms))                          # тема одночасно на 1–2+ інших платформах
     parts = {"попит": round(max(0.0, demand), 1), "прискорення": round(accel, 1), "прогалина YouTube": round(gap, 1),
@@ -201,6 +201,9 @@ TRACKED = [
     {"title": "Matthew Perry", "article": "Matthew_Perry", "query": "Matthew Perry", "hypothesis": "Хвиля від Netflix-документалки"},
     {"title": "Cornell 7", "article": "Cornell_7", "query": "Cornell 7", "hypothesis": "НЕ брати: забито + юридичний ризик"},
     {"title": "AI data center opposition", "article": "", "query": "data center opposition", "hypothesis": "Містечка проти датацентрів"},
+    {"title": "Tim Tebow / Life Surge", "article": "Tim_Tebow", "query": "Life Surge", "hypothesis": "«Християнські» семінари в борг; Pablo Torre 1.24M — потрібен свій кут"},
+    {"title": "Larry Nassar registry", "article": "Larry_Nassar", "query": "Larry Nassar registry", "hypothesis": "20 000 людей стерто з реєстру; конкурентів немає"},
+    {"title": "Cincinnati run club", "article": "", "query": "cincinnati run club", "hypothesis": "TikTok-драма; одне велике відео (223K)"},
 ]
 
 
@@ -232,8 +235,7 @@ def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date |
             continue
         summ = wiki_summary(http, art)
         kind = classify(summ)
-        if kind == "не наше":  # лише спорт, телешоу, ігри, таблиці; люди й події лишаються
-            continue
+        # нічого не відсіюємо: будь-який тренд — сигнал; категорія лише впливає на «придатність»
         out.append({"article": art, "title": art.replace("_", " "), "series": series, "momentum": m,
                     "kind": kind, "summary": summ})
     # дорогі перевірки — лише для найсильніших кандидатів
@@ -421,7 +423,7 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
 <ul class="small"><li><b>Попит</b> (0–3): скільки людей учора відкрили статтю у Вікіпедії. 1K → 1, 10K → 2, 100K+ → 3.</li>
 <li><b>Прискорення</b> (0–3): учора ÷ медіана попередніх 14 днів. ×2 → 1, ×4 → 2, ×8+ → 3. Це головний ранній сигнал: тема росте швидше, ніж про неї встигли зняти.</li>
 <li><b>Прогалина YouTube</b> (0–2): скільки довгих (≥10 хв) відео з'явилось за тиждень. 0 → 2 бали; 6+ → 0.</li>
-<li><b>Придатність</b> (0–2): опис статті містить «суд, шахрайство, вбивство, скандал, компанія, катастрофа…» → розслідування. Фільм/серіал про реальну подію → «хвиля від релізу».</li>
+<li><b>Придатність</b> (0.5–2): «розслідування» (суд, шахрайство, вбивство, скандал, катастрофа…) — 2; «хвиля від релізу» (фільм/серіал про реальну подію) — 1.5; інше — 1; «люди/шоу/спорт» — 0.5. Нічого не відсіюється: будь-який тренд — сигнал, просто з нижчим балом.</li>
 <li><b>Ранній сигнал</b> (+1): тема росте, але ще не вибухнула (менше 300K переглядів на добу).</li>
 <li><b>Інші платформи</b> (0–2): тема одночасно в Google Trends / Google News / Reddit / X. Збіг на кількох платформах — найкраще підтвердження, що хайп не випадковий. Наведи курсор на мітку — побачиш, які саме заголовки збіглись.</li>
 <li><b>Автодоповнення</b>: скільки підказок Google / YouTube / Amazon містять тему. Якщо YouTube підказує «… documentary», «… what happened» — люди вже шукають саме відео.</li>

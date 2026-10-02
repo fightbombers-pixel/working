@@ -51,6 +51,32 @@ python -m niche_finder report       # звіт з того, що вже в ба�
 Запускайте раз на тиждень (cron): `0 9 * * 1 cd /path/to/repo && python -m niche_finder run`.
 Дані накопичуються в `data/niches.db` (SQLite), тож з кожним тижнем видно динаміку.
 
+## Радар хайпу (`radar`) — щодня
+
+```bash
+python -m niche_finder radar                  # усе: Вікіпедія, Google Trends (тренди + зростаючі запити), Google News,
+                                              # Reddit (r/all + 17 сабів), X, автодоповнення, YouTube
+python -m niche_finder radar --no-rising      # якщо Google Trends дає 429 без проксі
+python -m niche_finder radar --pinterest      # + Pinterest через Apify (APIFY_TOKEN + APIFY_PINTEREST_ACTOR)
+```
+
+Звіт `reports/radar_YYYY-MM-DD.html`:
+- **Перевірка гіпотез** — теми, що вже пропонувались (`TRACKED` у `radar.py`): графік Вікіпедії 30 днів, YouTube,
+  інші платформи, автодоповнення, автовердикт і посилання для ручної перевірки.
+- **Зростаючі запити Google Trends** — ранні сигнали (Breakout = +5000%) по 44 базових словах у 4 країнах.
+- **Нові теми** — бал 0–10, розкладений на складові: попит, прискорення, прогалина YouTube, придатність,
+  ранній сигнал, інші платформи. Нічого не відсіюється — будь-який тренд є сигналом.
+- **Сирі сигнали** — X, Reddit, Google News, Threads.
+
+Без ключів працює все, крім Threads (`THREADS_ACCESS_TOKEN` або Apify) і Pinterest. Зростаючим запитам Google Trends
+потрібні резидентні проксі (`PROXY_URLS`), якщо Google ріже IP.
+
+## Робота з агентом
+
+`CLAUDE.md` — принципи для Claude Code: як перевіряти гіпотези, правила фактів, конвеєр «радар → досьє (2 агенти) →
+конкуренти → сценарій → пакет», шаблон сценарію. `prompts/` — готові промпти агентів.
+Транскрипти YouTube локально: `yt-dlp --cookies-from-browser chrome --skip-download --write-auto-subs --sub-langs "en.*" <url>`.
+
 ## Пошук нових форматів (`discover`)
 
 ```bash
