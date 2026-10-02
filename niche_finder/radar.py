@@ -159,8 +159,51 @@ def links(article: str, title: str) -> dict:
     }
 
 
+def deep_check(http: HttpClient, t: dict, end: date, signals: list[dict], check_youtube: bool = True) -> dict:
+    """Повна перевірка теми: 30-денний ряд Вікіпедії, YouTube, інші платформи, автодоповнення, бал."""
+    from .signals import autocomplete, platforms_for
+
+    if t.get("article"):
+        full = wiki_series(http, t["article"], end)
+        if len(full) >= 7:
+            t["series"], t["momentum"] = full, momentum(full)
+    t.setdefault("series", [])
+    t.setdefault("momentum", momentum(t["series"]))
+    t.setdefault("summary", {})
+    t.setdefault("kind", "розслідування")
+    q = t.get("query") or re.sub(r"\s*\(.*?\)", "", t["title"])
+    sup = {}
+    if check_youtube:
+        try:
+            sup = youtube_supply(q)
+        except Exception as exc:
+            log.error("youtube %s: %s", q, exc)
+    plat = platforms_for(q, signals)
+    t.update({"supply": sup, "platforms": plat, "autocomplete": autocomplete(http, q.lower()),
+              "score": score(t["momentum"], sup, t["kind"], len(plat)),
+              "links": links(t.get("article") or q.replace(" ", "_"), q)})
+    return t
+
+
+# Теми, які вже пропонувались (01–02.10.2026): перевіряємо, чи гіпотеза тримається
+TRACKED = [
+    {"title": "Christa Pike", "article": "Christa_Pike", "hypothesis": "№1 для Revela: страта провалилась, розслідувань немає"},
+    {"title": "Rui Pinto", "article": "Rui_Pinto", "query": "Rui Pinto", "hypothesis": "Хакер проти Man City; зняли захист свідка"},
+    {"title": "Flydubai Flight 1073", "article": "Flydubai_Flight_1073", "query": "flydubai", "hypothesis": "Пілот напав на пілота; сценарій готовий"},
+    {"title": "UnitedHealthcare", "article": "UnitedHealth_Group", "query": "UnitedHealthcare", "hypothesis": "Хайп від John Oliver, YouTube порожній"},
+    {"title": "Musk (film)", "article": "Musk_(film)", "query": "Musk documentary", "hypothesis": "Хвиля до 9.10 (реліз)"},
+    {"title": "Wicknell Chivayo", "article": "Wicknell_Chivayo", "query": "Wicknell Chivayo", "hypothesis": "Тендерний мільярдер загинув; конкурентів немає"},
+    {"title": "Elizabeth Holmes", "article": "Elizabeth_Holmes", "query": "Elizabeth Holmes", "hypothesis": "Хвиля від A24 «You Can See Everything»"},
+    {"title": "Ted Kaczynski", "article": "Ted_Kaczynski", "query": "Unabomber", "hypothesis": "Хвиля від фільму Netflix"},
+    {"title": "Anna's Archive", "article": "Anna%27s_Archive", "query": "Anna's Archive", "hypothesis": "$341M боргу, конкурентів немає"},
+    {"title": "Matthew Perry", "article": "Matthew_Perry", "query": "Matthew Perry", "hypothesis": "Хвиля від Netflix-документалки"},
+    {"title": "Cornell 7", "article": "Cornell_7", "query": "Cornell 7", "hypothesis": "НЕ брати: забито + юридичний ризик"},
+    {"title": "AI data center opposition", "article": "", "query": "data center opposition", "hypothesis": "Містечка проти датацентрів"},
+]
+
+
 def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date | None = None,
-              check_youtube: bool = True, signals: list[dict] | None = None) -> list[dict]:
+              check_youtube: bool = True, signals: list[dict] | None = None, deep: int = 20) -> list[dict]:
     from .signals import autocomplete, platforms_for
 
     signals = signals or []
@@ -177,9 +220,11 @@ def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date |
     newcomers = [a for a, v in ranked if a not in oldest]
     pool = list(dict.fromkeys([a for a, _ in ranked[:candidates]] + newcomers[:candidates]))
 
+    days_sorted = sorted(k for k, v in tops.items() if v)
     out = []
     for art in pool:
-        series = wiki_series(http, art, end)
+        # ряд із денних топ-1000 (0 = статті не було в топі — для «новачків» це і є ранній сигнал)
+        series = [tops[d].get(art, 0) for d in days_sorted]
         m = momentum(series)
         if m["accel"] < 1.5 and m["last"] < 50_000:
             continue
@@ -187,18 +232,13 @@ def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date |
         kind = classify(summ)
         if kind == "не наше":
             continue
-        title = art.replace("_", " ")
-        sup = {}
-        if check_youtube:
-            try:
-                sup = youtube_supply(re.sub(r"\s*\(.*?\)", "", title))
-            except Exception as exc:
-                log.error("youtube %s: %s", title, exc)
-        plat = platforms_for(title, signals)
-        ac = autocomplete(http, re.sub(r"\s*\(.*?\)", "", title).lower())
-        out.append({"article": art, "title": title, "series": series, "momentum": m, "kind": kind,
-                    "summary": summ, "supply": sup, "platforms": plat, "autocomplete": ac,
-                    "score": score(m, sup, kind, len(plat)), "links": links(art, title)})
+        out.append({"article": art, "title": art.replace("_", " "), "series": series, "momentum": m,
+                    "kind": kind, "summary": summ})
+    # дорогі перевірки — лише для найсильніших кандидатів
+    out.sort(key=lambda t: -(math.log10(1 + t["momentum"]["last"]) + math.log2(max(1.0, t["momentum"]["accel"]))))
+    out = out[:deep]
+    for t in out:
+        deep_check(http, t, end, signals, check_youtube)
     return sorted(out, key=lambda t: -t["score"]["total"])
 
 
@@ -247,8 +287,21 @@ def rising_topics(http: HttpClient, signals: list[dict], top: int = 25, check_yo
     return out
 
 
+def verdict(t: dict) -> tuple[str, str]:
+    """Автовердикт по гіпотезі: чи тема ще жива і чи є місце на YouTube."""
+    m, sup, plat = t["momentum"], t.get("supply", {}), t.get("platforms", {})
+    alive = m["last"] >= 20_000 or m["accel"] >= 1.5 or len(plat) >= 2
+    crowded = sup.get("long", 0) >= 6 and sup.get("long_top", 0) >= 500_000
+    if not alive:
+        return "спадає — тема охолоне, якщо не буде нового приводу", "mid"
+    if crowded:
+        return "жива, але вже тісно на YouTube — потрібен свій кут", "mid"
+    return "підтверджується — попит є, місце на YouTube є", "good"
+
+
 def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str]]], out_path,
-                       rising: list[dict] | None = None, signals: list[dict] | None = None) -> "Path":
+                       rising: list[dict] | None = None, signals: list[dict] | None = None,
+                       tracked: list[dict] | None = None) -> "Path":
     import base64
     import html as H
     import subprocess
@@ -318,6 +371,21 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
                    f'<div style="overflow-x:auto"><table class="tbl"><tr><th>Запит</th><th>Ріст</th><th>Автодоповнення</th><th>YouTube за тиждень</th><th>Інші платформи</th><th>Перевірити</th></tr>{rrows}</table></div></div>') if rising else (
         '<div class="box"><h3 style="margin-top:0">Зростаючі запити Google Trends</h3><p class="small">Цього разу Google повернув 429 (обмеження для IP сервера). '
         'Запустіть радар локально або задайте резидентні проксі в PROXY_URLS — тоді цей блок заповниться.</p></div>')
+    trows = []
+    for t in tracked or []:
+        m, sup = t["momentum"], t.get("supply", {})
+        v, cls = verdict(t)
+        trows.append(
+            f'<tr><td><b>{E(t["title"])}</b><div class="small mute">{E(t.get("hypothesis", ""))}</div></td>'
+            f'<td>{_spark(t["series"], 160, 40)}<div class="small">вчора {fmt(m["last"])} · ×{m["accel"]} · {E(m["phase"])}</div></td>'
+            f'<td class="small">{(str(sup.get("long", 0)) + " довгих · топ " + fmt(sup.get("long_top", 0))) if sup else "—"}</td>'
+            f'<td>{plat_line(t.get("platforms", {}))}</td><td class="small">{ac_line(t.get("autocomplete", {}))}</td>'
+            f'<td><span class="tag {cls}">{E(v)}</span><div class="small"><a href="{t["links"]["pageviews"]}" target="_blank" rel="noopener">Вікі</a> · '
+            f'<a href="{t["links"]["trends"]}" target="_blank" rel="noopener">Trends</a> · <a href="{t["links"]["youtube_week"]}" target="_blank" rel="noopener">YouTube</a> · '
+            f'<a href="{t["links"]["news"]}" target="_blank" rel="noopener">News</a></div></td></tr>')
+    tracked_html = (f'<div class="box"><h3 style="margin-top:0">Теми, які я пропонував 01–02.10 — перевірка гіпотез</h3>'
+                    f'<p class="small">Кожна гіпотеза перевірена тими самими метриками, що й нові теми. Вердикт автоматичний; поруч посилання, щоб перевірити руками.</p>'
+                    f'<div style="overflow-x:auto"><table class="tbl"><tr><th>Тема і гіпотеза</th><th>Вікіпедія 30 днів</th><th>YouTube за тиждень</th><th>Інші платформи</th><th>Автодоповнення</th><th>Вердикт</th></tr>{"".join(trows)}</table></div></div>') if trows else ""
     sig = signals or []
     blocks = []
     for src in ("x", "reddit", "google_news"):
@@ -359,8 +427,10 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
 <li><b>Фаза</b>: «росте зараз» — прискорення ≥×3 і вчора майже пік; «розгін» — ×1.5–3; «після піку» — хвиля вже спадає (пізно, якщо немає нового приводу).</li></ul>
 <p class="small"><b>Перевірка руками (5 хв на тему):</b> 1) графік Вікіпедії — пік був учора чи вже спадає? 2) Google Trends за 7 днів — крива росте? 3) YouTube за тиждень — скільки довгих відео й скільки вони набрали за 1–2 дні? 4) Google News — чи є новий привід (суд, реліз, заява) у найближчі дні? Якщо 3 з 4 «так» — тема валідна.</p>
 <p class="small"><b>Як ловити теми до хайпу:</b> запускати радар щодня й дивитись фазу «розгін» з малими абсолютними цифрами; календар подій на 1–3 тижні вперед (релізи документалок і фільмів про реальні справи, дати судів, вироків і страт, річниці); статті, яких учора не було в топ-1000 Вікіпедії («новачки»).</p></div>
+{tracked_html}
 <div class="box"><h3 style="margin-top:0">Google Trends зараз</h3><div class="cols">{tr}</div></div>
 {rising_html}{signals_html}
+<h2>Нові теми з радару</h2>
 {"".join(cards)}
 </div></body></html>'''
     out_path = Path(out_path)

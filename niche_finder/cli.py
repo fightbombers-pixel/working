@@ -158,14 +158,19 @@ def radar_cmd(cfg: Config, days: int, candidates: int, rising: bool = True, pint
     http = HttpClient(cfg.proxies, min_interval=1.2, max_retries=6)
     signals = collect_all(http, rising=rising, proxies=cfg.proxies or None, apify_token=cfg.apify_token,
                           apify_pinterest_actor=os.getenv("APIFY_PINTEREST_ACTOR", "") if pinterest else "")
-    topics = run_radar(http, days=days, candidates=candidates, signals=signals)
+    topics = run_radar(http, days=days, candidates=candidates, signals=signals, deep=20)
     trends = {}
     for s in signals:
         if s["source"] == "google_trends":
             trends.setdefault(s["geo"], []).append((s["text"], s["value"]))
     rising_rows = rising_topics(http, signals) if rising else []
+    from datetime import timedelta
+
+    from .radar import TRACKED, deep_check
+
+    tracked = [deep_check(http, dict(t), date.today() - timedelta(days=1), signals) for t in TRACKED]
     path = write_radar_report(topics, trends, cfg.reports_dir / f"radar_{date.today().isoformat()}.html",
-                              rising=rising_rows, signals=signals)
+                              rising=rising_rows, signals=signals, tracked=tracked)
     log.info("%d topics -> %s", len(topics), path)
 
 
