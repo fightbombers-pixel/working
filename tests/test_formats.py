@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from types import SimpleNamespace
 
 from niche_finder import db
@@ -119,3 +120,15 @@ def test_radar_momentum_score_and_platforms():
     assert set(platforms_for("Christa Pike", sig)) == {"reddit", "x"}
     s = score(m, {"long": 0}, "розслідування", platforms=2)
     assert 0 < s["total"] <= 10 and s["parts"]["інші платформи"] == 2.0
+
+
+def test_outlier_score_skips_newest_and_news_channels():
+    from niche_finder.outliers import outlier_score, published, is_relevant
+
+    ch = {"subs": 50_000, "recent": [(f"n{i}", 10) for i in range(5)] + [(f"v{i}", 1000) for i in range(20)]}
+    o = outlier_score({"id": "x", "views": 30_000}, ch)
+    assert o["x"] == 30.0 and o["median"] == 1000
+    news = {"subs": 5_000_000, "recent": [(f"v{i}", 500) for i in range(30)]}
+    assert outlier_score({"id": "x", "views": 30_000}, news)["x"] is None
+    assert published("3 days ago", date(2026, 10, 2)) == "2026-09-29"
+    assert not is_relevant({"title": "Mitti De Baway Ep 03 (Sub)"})

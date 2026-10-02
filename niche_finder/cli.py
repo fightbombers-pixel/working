@@ -175,10 +175,19 @@ def radar_cmd(cfg: Config, days: int, candidates: int, rising: bool = True, pint
     log.info("%d topics -> %s", len(topics), path)
 
 
+def outliers_cmd(cfg: Config, queries: list[str]) -> None:
+    from .outliers import QUERIES, find_outliers, write_outliers_report
+
+    res = find_outliers(queries or QUERIES)
+    path = write_outliers_report(res, cfg.reports_dir)
+    log.info("%d аутлаєрів, %d малих каналів -> %s", len(res["outliers"]), len(res["small"]), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover", "radar"])
-    parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів")
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover", "radar", "outliers"])
+    parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів; "
+                        "для outliers: власні пошукові запити (за замовчуванням — набір розслідувань/драм)")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
     parser.add_argument("--check-top", type=int, default=25, help="скільки ключових слів перевірити в Google Trends")
@@ -212,6 +221,8 @@ def main(argv: list[str] | None = None) -> None:
         report(cfg, conn, args.days, args.min_mentions)
     if args.command == "radar":
         radar_cmd(cfg, args.radar_days, args.radar_candidates, rising=not args.no_rising, pinterest=args.pinterest)
+    if args.command == "outliers":
+        outliers_cmd(cfg, args.channels)
     if args.command == "discover":
         discover_cmd(cfg)
     if args.command == "formats":
