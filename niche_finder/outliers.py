@@ -32,7 +32,7 @@ QUERIES = ["investigation", "exposed", "what happened", "the truth about", "down
 JUNK = re.compile(r"episode|\bep\.? ?\d|full movie|free movie|eng sub|\bsub\)|disguised|homeless|romance|love story|"
                   r"drama review|minecraft|roblox|fortnite|marries|reacts? to|reaction|livestream|highlights|"
                   r"billionaire .*(wife|heir|ceo)|full review|【|#", re.I)
-NEWS_RE = re.compile(r"\bnews\b|\bnbc\b|\bcbs\b|\babc\d*\b|\bfox \d+|^fox news|\bcnn\b|\bbbc\b|\bsky (news|sports)|\bdw (news|documentary)|al jazeera|\bwion\b|court ?tv|court trials tv|law ?& ?crime|reuters|associated press|"
+NEWS_RE = re.compile(r"\bnews\b|news\d+|times now|gb ?news|republic (world|tv|bharat)|\babp\b|tv9|dd news|\bndtv|mathrubhumi|asianet|manorama|\bnews ?nation|\bwion|i24|kan news|jerusalem post|times of israel|ynet|\bchannel ?\d+\b|\bnbc\b|\bcbs\b|\babc\d*\b|\bfox \d+|^fox news|\bcnn\b|\bbbc\b|\bsky (news|sports)|\bdw (news|documentary)|al jazeera|\bwion\b|court ?tv|court trials tv|law ?& ?crime|reuters|associated press|"
  r"^the guardian|the independent|telegraph|hindustan times|economic times|new york post|\bforbes\b|bloomberg|cnbc|msnbc|^ms now$|newsmax|gb news|talktv|talksport|itv (news|sport)|"
  r"\bpbs\b|frontline|60 minutes|^today$|usa today|india today|business today|inside edition|tmz|e! news|entertainment tonight|access hollywood|^the (sun|mirror)$|mirror now|"
  r"daily mail|yahoo|abs-cbn|^gma |\bnhk\b|\bndtv\b|aaj tak|\bzee\b|wsj|wall street journal|new york times|washington post|vice news|business insider|euronews|france 24|cgtn|"
