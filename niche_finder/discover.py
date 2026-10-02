@@ -57,13 +57,17 @@ SEED_FORMATS = [
 ]
 
 
-def search_recent(query: str, limit: int = 40) -> list[dict]:
+def _ydl_search_url(url: str, limit: int = 40) -> list[dict]:
     from .sources.ytdlp import _ydl, parse_entry
 
-    url = f"https://www.youtube.com/results?search_query={quote_plus(query)}&sp={THIS_YEAR_VIDEOS}"
     with _ydl(limit) as ydl:
         info = ydl.extract_info(url, download=False)
     return [parse_entry(e) for e in info.get("entries") or [] if e and e.get("id")]
+
+
+def search_recent(query: str, limit: int = 40) -> list[dict]:
+    return _ydl_search_url(f"https://www.youtube.com/results?search_query={quote_plus(query)}&sp={THIS_YEAR_VIDEOS}",
+                           limit)
 
 
 def subscribers(channel_id: str) -> int:

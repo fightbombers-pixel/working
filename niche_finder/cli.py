@@ -145,9 +145,33 @@ def discover_cmd(cfg: Config) -> None:
     log.info("%d formats -> %s", len(results), path)
 
 
+def radar_cmd(cfg: Config, days: int, candidates: int, rising: bool = True, pinterest: bool = False) -> None:
+    import os
+
+    from datetime import date
+
+    from .radar import run_radar, write_radar_report
+
+    from .radar import rising_topics
+    from .signals import collect_all
+
+    http = HttpClient(cfg.proxies, min_interval=1.2, max_retries=6)
+    signals = collect_all(http, rising=rising, proxies=cfg.proxies or None, apify_token=cfg.apify_token,
+                          apify_pinterest_actor=os.getenv("APIFY_PINTEREST_ACTOR", "") if pinterest else "")
+    topics = run_radar(http, days=days, candidates=candidates, signals=signals)
+    trends = {}
+    for s in signals:
+        if s["source"] == "google_trends":
+            trends.setdefault(s["geo"], []).append((s["text"], s["value"]))
+    rising_rows = rising_topics(http, signals) if rising else []
+    path = write_radar_report(topics, trends, cfg.reports_dir / f"radar_{date.today().isoformat()}.html",
+                              rising=rising_rows, signals=signals)
+    log.info("%d topics -> %s", len(topics), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover"])
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover", "radar"])
     parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
     parser.add_argument("--max-posts", type=int, default=1200, help="скільки нових постів аналізувати за запуск")
@@ -160,6 +184,10 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--lang", default="Ukrainian", help="viral: мова пояснень у звіті")
     parser.add_argument("--exclude", default="", help="formats: власні канали через кому (назви або id), "
                         "щоб їхні відео не рахувались як попит, напр. 'Lume,TrueCrimeVault,ago,Lumicus'")
+    parser.add_argument("--radar-days", type=int, default=7, help="radar: скільки днів топу Вікіпедії брати")
+    parser.add_argument("--no-rising", action="store_true", help="radar: без зростаючих запитів Google Trends")
+    parser.add_argument("--pinterest", action="store_true", help="radar: Pinterest через Apify (платно; APIFY_TOKEN + APIFY_PINTEREST_ACTOR)")
+    parser.add_argument("--radar-candidates", type=int, default=60, help="radar: скільки кандидатів перевіряти")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -176,6 +204,8 @@ def main(argv: list[str] | None = None) -> None:
         trends(cfg, conn, args.check_top)
     if args.command in ("report", "run"):
         report(cfg, conn, args.days, args.min_mentions)
+    if args.command == "radar":
+        radar_cmd(cfg, args.radar_days, args.radar_candidates, rising=not args.no_rising, pinterest=args.pinterest)
     if args.command == "discover":
         discover_cmd(cfg)
     if args.command == "formats":

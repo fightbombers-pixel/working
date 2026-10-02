@@ -103,3 +103,19 @@ def test_discover_breakouts(monkeypatch, tmp_path):
 def test_market_check_excludes_network_by_name():
     s = market_check(FakeSource().search, "q", "make|money", exclude={"UCc0", " ucc1 "})
     assert s["videos"] == 19  # UCsrc лишається (не виключений), UCc0 і UCc1 виключені
+
+
+def test_radar_momentum_score_and_platforms():
+    from niche_finder.radar import classify, momentum, score
+    from niche_finder.signals import platforms_for
+
+    m = momentum([1000] * 20 + [9000])
+    assert m["accel"] == 9.0 and m["phase"] == "росте зараз"
+    assert momentum([1000] * 10 + [9000, 2000])["phase"] in ("розгін", "фон")
+    assert classify({"description": "American convicted murderer"}) == "розслідування"
+    assert classify({"description": "English footballer"}) == "не наше"
+    sig = [{"source": "reddit", "text": "Tennessee suspends executions after Christa Pike survives"},
+           {"source": "x", "text": "Christa Pike"}, {"source": "google_news", "text": "Unrelated story"}]
+    assert set(platforms_for("Christa Pike", sig)) == {"reddit", "x"}
+    s = score(m, {"long": 0}, "розслідування", platforms=2)
+    assert 0 < s["total"] <= 10 and s["parts"]["інші платформи"] == 2.0
