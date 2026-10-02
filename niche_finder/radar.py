@@ -195,7 +195,7 @@ TRACKED = [
     {"title": "Wicknell Chivayo", "article": "Wicknell_Chivayo", "query": "Wicknell Chivayo", "hypothesis": "Тендерний мільярдер загинув; конкурентів немає"},
     {"title": "Elizabeth Holmes", "article": "Elizabeth_Holmes", "query": "Elizabeth Holmes", "hypothesis": "Хвиля від A24 «You Can See Everything»"},
     {"title": "Ted Kaczynski", "article": "Ted_Kaczynski", "query": "Unabomber", "hypothesis": "Хвиля від фільму Netflix"},
-    {"title": "Anna's Archive", "article": "Anna%27s_Archive", "query": "Anna's Archive", "hypothesis": "$341M боргу, конкурентів немає"},
+    {"title": "Anna's Archive", "article": "Anna's_Archive", "query": "Anna's Archive", "hypothesis": "$341M боргу, конкурентів немає"},
     {"title": "Matthew Perry", "article": "Matthew_Perry", "query": "Matthew Perry", "hypothesis": "Хвиля від Netflix-документалки"},
     {"title": "Cornell 7", "article": "Cornell_7", "query": "Cornell 7", "hypothesis": "НЕ брати: забито + юридичний ризик"},
     {"title": "AI data center opposition", "article": "", "query": "data center opposition", "hypothesis": "Містечка проти датацентрів"},
@@ -319,7 +319,7 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
         except Exception:
             return url
 
-    names = {"google_trends": "Google Trends", "google_news": "Google News", "reddit": "Reddit", "x": "X", "rising": "Trends rising", "pinterest": "Pinterest"}
+    names = {"google_trends": "Google Trends", "google_news": "Google News", "reddit": "Reddit", "x": "X", "rising": "Trends rising", "pinterest": "Pinterest", "threads": "Threads"}
 
     def plat_line(p):
         if not p:
@@ -388,7 +388,7 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
                     f'<div style="overflow-x:auto"><table class="tbl"><tr><th>Тема і гіпотеза</th><th>Вікіпедія 30 днів</th><th>YouTube за тиждень</th><th>Інші платформи</th><th>Автодоповнення</th><th>Вердикт</th></tr>{"".join(trows)}</table></div></div>') if trows else ""
     sig = signals or []
     blocks = []
-    for src in ("x", "reddit", "google_news"):
+    for src in ("x", "reddit", "google_news", "threads"):
         items = [x for x in sig if x["source"] == src][:40]
         if items:
             def li(x):

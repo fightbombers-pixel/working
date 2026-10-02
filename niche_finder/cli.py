@@ -157,7 +157,8 @@ def radar_cmd(cfg: Config, days: int, candidates: int, rising: bool = True, pint
 
     http = HttpClient(cfg.proxies, min_interval=1.2, max_retries=6)
     signals = collect_all(http, rising=rising, proxies=cfg.proxies or None, apify_token=cfg.apify_token,
-                          apify_pinterest_actor=os.getenv("APIFY_PINTEREST_ACTOR", "") if pinterest else "")
+                          apify_pinterest_actor=os.getenv("APIFY_PINTEREST_ACTOR", "") if pinterest else "",
+                          threads_token=cfg.threads_access_token, apify_threads_actor=cfg.apify_threads_actor)
     topics = run_radar(http, days=days, candidates=candidates, signals=signals, deep=20)
     trends = {}
     for s in signals:

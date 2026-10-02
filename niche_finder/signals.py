@@ -32,8 +32,9 @@ SEEDS = [
     "explosion", "cult", "conspiracy", "heist", "robbery", "prison", "escape", "spy", "hijack", "what happened",
 ]
 GEOS = ["US", "GB", "CA", "AU"]
-REDDIT_SUBS = ["news", "worldnews", "OutOfTheLoop", "UnresolvedMysteries", "TrueCrimeDiscussion", "aviation",
-               "business", "technology", "Scams", "law"]
+REDDIT_SUBS = ["all", "news", "worldnews", "OutOfTheLoop", "UnresolvedMysteries", "TrueCrimeDiscussion",
+               "aviation", "business", "technology", "Scams", "law", "nottheonion", "PublicFreakout",
+               "interestingasfuck", "MurderedByWords", "LeopardsAteMyFace", "fraud", "legaladvice"]
 
 
 def _get(http: HttpClient, url: str):
@@ -72,7 +73,9 @@ def reddit_hot(http: HttpClient, subs=REDDIT_SUBS, per_sub: int = 25) -> list[di
     http = HttpClient(http.proxies, min_interval=6.0, max_retries=2)
     out = []
     for sub in subs:
-        r = _get(http, f"https://www.reddit.com/r/{sub}/hot/.rss?limit={per_sub}")
+        url = (f"https://www.reddit.com/r/all/top/.rss?t=day&limit={per_sub}" if sub == "all"
+               else f"https://www.reddit.com/r/{sub}/hot/.rss?limit={per_sub}")
+        r = _get(http, url)
         if r is None or r.status_code != 200:
             continue
         for e in feedparser.parse(r.content).entries:
@@ -129,6 +132,25 @@ def rising_queries(seeds=SEEDS, geos=GEOS, timeframe: str = "now 7-d", proxies: 
     return out
 
 
+def threads_posts(http: HttpClient, queries: list[str], token: str = "", apify_token: str = "",
+                  apify_actor: str = "", limit: int = 25) -> list[dict]:
+    """Threads: лише з офіційним токеном (threads_keyword_search) або через Apify — інакше порожньо."""
+    from .sources.threads import ThreadsSource
+
+    src = ThreadsSource(http, token, apify_token, apify_actor)
+    if not src.enabled:
+        return []
+    out = []
+    for q in queries:
+        try:
+            for p in src.search(q, limit=limit):
+                out.append({"source": "threads", "geo": q, "text": (p.get("title") or p.get("body") or "")[:200],
+                            "value": str(p.get("score", "")), "url": p.get("url", "")})
+        except Exception as exc:
+            log.error("threads %s: %s", q, exc)
+    return out
+
+
 def autocomplete(http: HttpClient, term: str) -> dict:
     """Підказки Google, YouTube і Amazon для теми: скільки є і які саме (що люди дописують)."""
     res = {}
@@ -168,7 +190,8 @@ def pinterest_apify(http: HttpClient, token: str, actor: str, queries: list[str]
 
 
 def collect_all(http: HttpClient, rising: bool = True, seeds=SEEDS, geos=GEOS, proxies=None,
-                apify_token: str = "", apify_pinterest_actor: str = "") -> list[dict]:
+                apify_token: str = "", apify_pinterest_actor: str = "", threads_token: str = "",
+                apify_threads_actor: str = "") -> list[dict]:
     sig = []
     for name, fn in (("google_trends", lambda: google_trends_now(http, geos)), ("google_news", lambda: google_news(http)),
                      ("reddit", lambda: reddit_hot(http)), ("x", lambda: x_trends(http))):
@@ -183,6 +206,7 @@ def collect_all(http: HttpClient, rising: bool = True, seeds=SEEDS, geos=GEOS, p
         log.info("rising: %d", len(got))
         sig += got
     sig += pinterest_apify(http, apify_token, apify_pinterest_actor, seeds[:10])
+    sig += threads_posts(http, seeds[:12], threads_token, apify_token, apify_threads_actor)
     return sig
 
 
