@@ -105,13 +105,18 @@ def rising_queries(seeds=SEEDS, geos=GEOS, timeframe: str = "now 7-d", proxies: 
 
     kw = {"proxies": proxies, "retries": 2, "backoff_factor": 1} if proxies else {}
     tr = TrendReq(hl="en-US", tz=0, timeout=(10, 25), **kw)
-    out = []
+    out, fails = [], 0
     for geo in geos:
         for seed in seeds:
+            if fails >= 5:  # Google ріже IP (429) — далі марно, потрібні проксі (PROXY_URLS)
+                log.error("pytrends: 5 відмов поспіль — зупиняю зростаючі запити; задайте PROXY_URLS (резидентні проксі)")
+                return out
             try:
                 tr.build_payload([seed], timeframe=timeframe, geo=geo)
                 rq = tr.related_queries().get(seed, {}).get("rising")
+                fails = 0
             except Exception as exc:
+                fails += 1
                 log.warning("pytrends %s %s: %s", geo, seed, str(exc)[:80])
                 time.sleep(pause * 4)
                 continue

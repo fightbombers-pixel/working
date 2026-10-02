@@ -315,7 +315,9 @@ def write_radar_report(topics: list[dict], trends: dict[str, list[tuple[str, str
     rising_html = (f'<div class="box"><h3 style="margin-top:0">Зростаючі запити Google Trends — ранні сигнали</h3>'
                    f'<p class="small">Запити, що за тиждень виросли найбільше (Breakout = понад +5000%), відфільтровані під розслідування. '
                    f'Валідна тема: є автодоповнення (люди вже це шукають), мало довгих відео на YouTube, згадки на інших платформах.</p>'
-                   f'<div style="overflow-x:auto"><table class="tbl"><tr><th>Запит</th><th>Ріст</th><th>Автодоповнення</th><th>YouTube за тиждень</th><th>Інші платформи</th><th>Перевірити</th></tr>{rrows}</table></div></div>') if rising else ""
+                   f'<div style="overflow-x:auto"><table class="tbl"><tr><th>Запит</th><th>Ріст</th><th>Автодоповнення</th><th>YouTube за тиждень</th><th>Інші платформи</th><th>Перевірити</th></tr>{rrows}</table></div></div>') if rising else (
+        '<div class="box"><h3 style="margin-top:0">Зростаючі запити Google Trends</h3><p class="small">Цього разу Google повернув 429 (обмеження для IP сервера). '
+        'Запустіть радар локально або задайте резидентні проксі в PROXY_URLS — тоді цей блок заповниться.</p></div>')
     sig = signals or []
     blocks = []
     for src in ("x", "reddit", "google_news"):
