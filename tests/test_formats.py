@@ -113,7 +113,7 @@ def test_radar_momentum_score_and_platforms():
     assert m["accel"] == 9.0 and m["phase"] == "росте зараз"
     assert momentum([1000] * 10 + [9000, 2000])["phase"] in ("розгін", "фон")
     assert classify({"description": "American convicted murderer"}) == "розслідування"
-    assert classify({"description": "English footballer"}) == "не наше"
+    assert classify({"description": "2026 Asian Games medal table"}) == "не наше"
     sig = [{"source": "reddit", "text": "Tennessee suspends executions after Christa Pike survives"},
            {"source": "x", "text": "Christa Pike"}, {"source": "google_news", "text": "Unrelated story"}]
     assert set(platforms_for("Christa Pike", sig)) == {"reddit", "x"}

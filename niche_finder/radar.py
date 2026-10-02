@@ -37,9 +37,10 @@ INVESTIGATE = re.compile(
     r"scandal|leak|whistleblow|hacker|spy|espionage|crash|disaster|accident|collapse|explosion|businessman|"
     r"billionaire|tycoon|company|corporation|bank|insurer|cult|abuse|prison|investigat|allegation|criminal|heist|robbery",
     re.I)
-NOT_INVESTIGATE = re.compile(r"footballer|cricketer|tennis player|basketball|baseball|wrestler|singer|rapper|"
-                             r"band|album|song|video game|season of|television season|sports|olympic|games|medal|"
-                             r"actress|actor\b|model\b|tv series|miniseries|film\b", re.I)
+# Revela бере будь-які розслідування (новини, драми, кримінал, скандали); відсікаємо лише чисті розваги й спорт
+NOT_INVESTIGATE = re.compile(r"season of|television season|reality (television|competition)|video game|album|song\b|"
+                             r"sports team|football club|national team|tournament|championship|league\b|olympic|"
+                             r"games\b|medal table|cup\b|\bseries [0-9]|game show|talent show", re.I)
 WAVE = re.compile(r"film|documentary|miniseries|series|docuseries", re.I)  # хвиля від релізу
 
 
@@ -115,7 +116,7 @@ def classify(summary: dict) -> str:
     text = f"{summary.get('description', '')} {summary.get('extract', '')}"
     if WAVE.search(summary.get("description", "")) and INVESTIGATE.search(text):
         return "хвиля від релізу"
-    if NOT_INVESTIGATE.search(summary.get("description", "")) and not INVESTIGATE.search(summary.get("description", "")):
+    if NOT_INVESTIGATE.search(summary.get("description", "")) and not INVESTIGATE.search(text):
         return "не наше"
     return "розслідування" if INVESTIGATE.search(text) else "інше"
 
@@ -139,7 +140,7 @@ def score(m: dict, supply: dict, kind: str, platforms: int = 0) -> dict:
     demand = min(3.0, math.log10(1 + m["last"]) - 2)            # 1k → 1, 10k → 2, 100k+ → 3
     accel = min(3.0, math.log2(max(1.0, m["accel"])))           # 2× → 1, 4× → 2, 8×+ → 3
     gap = 2.0 if supply.get("long", 0) == 0 else max(0.0, 2.0 - supply["long"] / 3)
-    fit = {"розслідування": 2.0, "хвиля від релізу": 1.5, "інше": 0.5, "не наше": 0.0}[kind]
+    fit = {"розслідування": 2.0, "хвиля від релізу": 1.5, "інше": 1.0, "не наше": 0.0}[kind]
     early = 1.0 if m["phase"] in ("росте зараз", "розгін") and m["last"] < 300_000 else 0.0
     cross = min(2.0, float(platforms))                          # тема одночасно на 1–2+ інших платформах
     parts = {"попит": round(max(0.0, demand), 1), "прискорення": round(accel, 1), "прогалина YouTube": round(gap, 1),
@@ -231,7 +232,7 @@ def run_radar(http: HttpClient, days: int = 7, candidates: int = 60, end: date |
             continue
         summ = wiki_summary(http, art)
         kind = classify(summ)
-        if kind not in ("розслідування", "хвиля від релізу"):  # знаменитості, спорт, шоу — не для Revela
+        if kind == "не наше":  # лише спорт, телешоу, ігри, таблиці; люди й події лишаються
             continue
         out.append({"article": art, "title": art.replace("_", " "), "series": series, "momentum": m,
                     "kind": kind, "summary": summ})
