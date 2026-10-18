@@ -183,9 +183,19 @@ def outliers_cmd(cfg: Config, queries: list[str]) -> None:
     log.info("%d аутлаєрів, %d малих каналів -> %s", len(res["outliers"]), len(res["small"]), path)
 
 
+def lume_cmd(cfg: Config, pack: str, n_queries: int) -> None:
+    from pathlib import Path
+
+    from .lume_hunt import hunt, write_report
+
+    res = hunt(Path(pack) if pack else None, n_queries)
+    path = write_report(res, cfg.reports_dir)
+    log.info("%d хітів/проривів (%d нових) -> %s", len(res["rows"]), sum(1 for r in res["rows"] if not r["dup"]), path)
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(prog="niche_finder", description="Пошук бізнес-ніш у соцмережах і трендах")
-    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover", "radar", "outliers"])
+    parser.add_argument("command", choices=["collect", "analyze", "trends", "report", "run", "viral", "formats", "discover", "radar", "outliers", "lume"])
     parser.add_argument("channels", nargs="*", help="для viral/formats: @handle, URL або id каналів; "
                         "для outliers: власні пошукові запити (за замовчуванням — набір розслідувань/драм)")
     parser.add_argument("--limit", type=int, default=200, help="постів на один запит у кожному джерелі")
@@ -203,6 +213,8 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--no-rising", action="store_true", help="radar: без зростаючих запитів Google Trends")
     parser.add_argument("--pinterest", action="store_true", help="radar: Pinterest через Apify (платно; APIFY_TOKEN + APIFY_PINTEREST_ACTOR)")
     parser.add_argument("--radar-candidates", type=int, default=60, help="radar: скільки кандидатів перевіряти")
+    parser.add_argument("--pack", default="", help="lume: шлях до LUME_CONTEXT_PACK (для дедупу)")
+    parser.add_argument("--queries", type=int, default=150, help="lume: скільки пошукових запитів")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args(argv)
 
@@ -221,6 +233,8 @@ def main(argv: list[str] | None = None) -> None:
         report(cfg, conn, args.days, args.min_mentions)
     if args.command == "radar":
         radar_cmd(cfg, args.radar_days, args.radar_candidates, rising=not args.no_rising, pinterest=args.pinterest)
+    if args.command == "lume":
+        lume_cmd(cfg, args.pack, args.queries)
     if args.command == "outliers":
         outliers_cmd(cfg, args.channels)
     if args.command == "discover":

@@ -139,3 +139,17 @@ def test_news_channel_split():
 
     assert is_news("CBS News") and is_news("WLWT") and is_news("Law&Crime Trials")
     assert not is_news("Coffeezilla") and not is_news("Internet Anarchist") and not is_news("KAYE")
+
+
+def test_lume_hunt_pack_and_pool(tmp_path):
+    from niche_finder.lume_hunt import CASINO, NICHE, load_pack, query_pool
+
+    (tmp_path / "03_ALL_OUTLIERS.csv").write_text("date,title,url\n2026-10-01,X,https://youtu.be/abcdefghijk\n", encoding="utf-8")
+    (tmp_path / "06_LUME_CASE_INDEX.md").write_text(
+        "| # | Views | Протагоніст | Справа |\n|--:|---|---|---|\n| 1 | 3.3M | Albert Spaggiari | vault | `zQfOUUxJvJM` |\n",
+        encoding="utf-8")
+    known, names = load_pack(tmp_path)
+    assert "abcdefghijk" in known and "zQfOUUxJvJM" in known and "spaggiari" in names
+    q = query_pool(40, seed=1)
+    assert len(q) == 40 and "the man who" in q
+    assert NICHE.search("He Stole $10 Million Using a Loophole") and CASINO.search("Beat Every Casino")
