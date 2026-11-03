@@ -22,7 +22,7 @@ A woman answered on the second ring.
 
 "Bursar's Office, this is Dottie."
 
-"Hi, Gail. My name's Stuart Cain. I'm the authorized third-party payer on a student account, and I need to cancel a scheduled payment and remove myself from the account. Today, please."
+"Hi, Dottie. My name's Stuart Cain. I'm the authorized third-party payer on a student account, and I need to cancel a scheduled payment and remove myself from the account. Today, please."
 
 "Can I get the student's ID number?"
 
@@ -639,6 +639,14 @@ The man selling it lived out past Arlington, and he wanted forty-two hundred.
 Lamont shook his head slowly.
 
 "Twenty-two months you paid for that girl's education," he said. "And you're the one who learned something."
+
+"I don't know about that."
+
+"I do. You learned not to stand behind a box just because somebody slapped a nice label on it. Took you twenty-two months and about thirty-three thousand dollars, but you learned it."
+
+"That's an expensive class."
+
+"Cheaper than the one she's taking now," Lamont said. "She's paying for hers with her name."
 
 I handed the man forty-two hundred dollars in an envelope, and he handed me a title and a set of keys on a little floating keychain shaped like a bobber.
 
